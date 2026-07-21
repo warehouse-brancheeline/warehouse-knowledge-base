@@ -802,7 +802,7 @@ export default function App() {
       const isImg = mediaWrapper.getAttribute('data-media-type') === 'image';
       if (isImg) {
         setSelectedImageElement(mediaWrapper);
-        setActiveRibbonTab('image');
+        setActiveRibbonTab('Format');
         const img = mediaWrapper.querySelector('img');
         if (img) {
           // Parse width
