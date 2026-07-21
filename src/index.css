@@ -82,7 +82,7 @@
 
 /* Media wrapper style for images and videos with interactive layouts */
 .editor-content .media-wrapper {
-  @apply relative inline-flex flex-col max-w-full my-4 rounded-lg bg-white overflow-hidden border border-slate-200 p-1 select-none transition-all duration-200;
+  @apply relative max-w-full my-4 rounded-lg bg-white overflow-hidden border border-slate-200 p-1 select-none transition-all duration-200;
 }
 
 .editor-content .media-wrapper.selected {
@@ -96,11 +96,11 @@
 
 /* Layout options */
 .editor-content .media-wrapper.layout-block {
-  @apply flex w-full mx-auto my-6;
+  @apply block w-full mx-auto my-6;
 }
 
 .editor-content .media-wrapper.layout-inline {
-  @apply inline-flex m-2 align-middle;
+  @apply inline-block m-2 align-middle;
 }
 
 .editor-content .media-wrapper.layout-float-left {
