@@ -152,7 +152,7 @@
 
 /* Document Page layout (Google Docs / Word style) */
 .document-page {
-  @apply bg-white shadow-[0_4px_16px_rgba(0,0,0,0.06)] border border-slate-100 mx-auto px-16 py-14 min-h-[840px] w-full rounded-md;
+  @apply bg-white shadow-[0_4px_16px_rgba(0,0,0,0.06)] border border-slate-100 mx-auto px-16 py-14 w-full rounded-md;
   min-height: auto;
   height: auto;
 }
