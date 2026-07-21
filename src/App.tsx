@@ -1762,7 +1762,121 @@ export default function App() {
 
                       {activeRibbonTab === 'Format' && (
                         <div className="flex items-center gap-4 shrink-0">
-                          <div className="text-xs text-slate-400 italic">Select an object to enable formatting tools</div>
+                          {/* Object Alignment Dropdown */}
+                          <div className="relative flex items-center h-full">
+                            <button
+                              type="button"
+                              id="ribbon-btn-align-object"
+                              title="Align Object"
+                              onClick={(e) => {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                const coords: { top: number; left: number } = {
+                                  top: rect.bottom,
+                                  left: rect.left,
+                                };
+                                setPopoverCoords(coords);
+                                setOpenImagePopover(openImagePopover === 'alignObject' ? null : 'alignObject');
+                              }}
+                              className={`h-7 px-2.5 rounded-md hover:bg-slate-100 transition-all flex items-center gap-1 border cursor-pointer ${
+                                openImagePopover === 'alignObject'
+                                  ? 'bg-blue-50 border-blue-500 text-blue-700 shadow-xs'
+                                  : 'border-transparent text-slate-700 font-medium'
+                              }`}
+                            >
+                              <Layout className="h-4 w-4" />
+                              <span className="text-[8px] text-slate-400 ml-0.5">▼</span>
+                            </button>
+
+                            {openImagePopover === 'alignObject' && popoverCoords && createPortal(
+                              <>
+                                <div className="fixed inset-0 z-40 bg-transparent" onClick={() => { setOpenImagePopover(null); setPopoverCoords(null); }} />
+                                <div 
+                                  className="fixed mt-1 bg-white border border-slate-200 shadow-lg rounded-xl p-2 z-50 min-w-[160px] animate-in fade-in slide-in-from-top-1 duration-150"
+                                  style={{
+                                    top: `${popoverCoords.top}px`,
+                                    left: `${popoverCoords.left}px`,
+                                  }}
+                                >
+                                  <div className="text-[10px] font-semibold text-slate-500 mb-2 px-2">Align Object</div>
+                                  <div className="flex flex-col gap-1">
+                                    <button
+                                      onClick={() => {
+                                        if (selectedImageElement) {
+                                          selectedImageElement.classList.remove('layout-block', 'layout-float-left', 'layout-float-right', 'layout-inline', 'align-center', 'align-left', 'align-right');
+                                          selectedImageElement.classList.add('layout-block', 'align-left');
+                                          pushToHistory(editorRef.current!.innerHTML);
+                                        }
+                                        setOpenImagePopover(null);
+                                      }}
+                                      className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-100 rounded text-sm text-slate-700"
+                                    >
+                                      <AlignLeft className="h-4 w-4" />
+                                      <span>Align Left</span>
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        if (selectedImageElement) {
+                                          selectedImageElement.classList.remove('layout-block', 'layout-float-left', 'layout-float-right', 'layout-inline', 'align-center', 'align-left', 'align-right');
+                                          selectedImageElement.classList.add('layout-block', 'align-center');
+                                          pushToHistory(editorRef.current!.innerHTML);
+                                        }
+                                        setOpenImagePopover(null);
+                                      }}
+                                      className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-100 rounded text-sm text-slate-700"
+                                    >
+                                      <AlignCenter className="h-4 w-4" />
+                                      <span>Align Center</span>
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        if (selectedImageElement) {
+                                          selectedImageElement.classList.remove('layout-block', 'layout-float-left', 'layout-float-right', 'layout-inline', 'align-center', 'align-left', 'align-right');
+                                          selectedImageElement.classList.add('layout-block', 'align-right');
+                                          pushToHistory(editorRef.current!.innerHTML);
+                                        }
+                                        setOpenImagePopover(null);
+                                      }}
+                                      className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-100 rounded text-sm text-slate-700"
+                                    >
+                                      <AlignRight className="h-4 w-4" />
+                                      <span>Align Right</span>
+                                    </button>
+                                    <div className="h-px bg-slate-200 my-1"></div>
+                                    <button
+                                      onClick={() => {
+                                        if (selectedImageElement) {
+                                          selectedImageElement.classList.remove('layout-block', 'layout-float-left', 'layout-float-right', 'layout-inline', 'align-center', 'align-left', 'align-right');
+                                          selectedImageElement.classList.add('layout-float-left');
+                                          pushToHistory(editorRef.current!.innerHTML);
+                                        }
+                                        setOpenImagePopover(null);
+                                      }}
+                                      className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-100 rounded text-sm text-slate-700"
+                                    >
+                                      <Layout className="h-4 w-4 rotate-90" />
+                                      <span>Float Left</span>
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        if (selectedImageElement) {
+                                          selectedImageElement.classList.remove('layout-block', 'layout-float-left', 'layout-float-right', 'layout-inline', 'align-center', 'align-left', 'align-right');
+                                          selectedImageElement.classList.add('layout-float-right');
+                                          pushToHistory(editorRef.current!.innerHTML);
+                                        }
+                                        setOpenImagePopover(null);
+                                      }}
+                                      className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-100 rounded text-sm text-slate-700"
+                                    >
+                                      <Layout className="h-4 w-4 -rotate-90" />
+                                      <span>Float Right</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              </>,
+                              document.body
+                            )}
+                          </div>
+                          
                           <div className="w-px h-10 bg-slate-200 mx-2"></div>
                           <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600 opacity-50 cursor-not-allowed"><Crop className="h-6 w-6 mb-1"/><span className="text-[10px]">Crop</span></button>
                           <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600 opacity-50 cursor-not-allowed"><RotateCw className="h-6 w-6 mb-1"/><span className="text-[10px]">Rotate</span></button>
