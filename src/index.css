@@ -1,0 +1,262 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-800 antialiased selection:bg-indigo-100 selection:text-indigo-900;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+/* Custom Rich Text Editor Styles */
+.editor-content {
+  outline: none;
+  min-height: 500px;
+}
+
+.editor-content h1 {
+  @apply text-3xl font-extrabold text-slate-900 mt-6 mb-3 tracking-tight border-b border-slate-100 pb-2;
+}
+
+.editor-content h2 {
+  @apply text-2xl font-bold text-slate-800 mt-5 mb-2.5 tracking-tight;
+}
+
+.editor-content h3 {
+  @apply text-xl font-semibold text-slate-800 mt-4 mb-2;
+}
+
+.editor-content p {
+  @apply text-base text-slate-700 leading-relaxed mb-4;
+}
+
+.editor-content a {
+  @apply text-indigo-600 underline hover:text-indigo-800 transition-colors cursor-pointer;
+}
+
+.editor-content blockquote {
+  @apply border-l-4 border-indigo-500 bg-indigo-50/50 px-4 py-2.5 my-4 rounded-r italic text-slate-700;
+}
+
+/* Lists styling */
+.editor-content ul {
+  @apply list-disc list-inside pl-5 mb-4 space-y-1;
+}
+
+.editor-content ol {
+  @apply list-decimal list-inside pl-5 mb-4 space-y-1;
+}
+
+.editor-content li {
+  @apply text-slate-700 leading-relaxed;
+}
+
+/* Table styling - Confluence style */
+.editor-content table {
+  @apply w-full border-collapse border border-slate-200 my-6 text-sm overflow-hidden rounded-lg shadow-sm;
+}
+
+.editor-content th {
+  @apply bg-slate-100 border border-slate-200 px-4 py-2.5 text-left font-semibold text-slate-700;
+}
+
+.editor-content td {
+  @apply border border-slate-200 px-4 py-2 text-slate-600;
+}
+
+.editor-content tr:nth-child(even) {
+  @apply bg-slate-50/50;
+}
+
+/* Custom Checklist */
+.editor-content .checklist-item {
+  @apply flex items-start space-x-2 my-1.5;
+}
+
+.editor-content .checklist-item input[type="checkbox"] {
+  @apply h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 mt-1 cursor-pointer;
+}
+
+.editor-content .checklist-item span {
+  @apply text-slate-700 leading-relaxed;
+}
+
+/* Media wrapper style for images and videos with interactive layouts */
+.editor-content .media-wrapper {
+  @apply relative inline-flex flex-col max-w-full my-4 rounded-lg bg-white overflow-hidden border border-slate-200 p-1 select-none transition-all duration-200;
+}
+
+.editor-content .media-wrapper.selected {
+  @apply ring-2 ring-indigo-500 ring-offset-1 shadow-md;
+}
+
+.editor-content .media-wrapper img, 
+.editor-content .media-wrapper iframe {
+  @apply rounded max-w-full h-auto;
+}
+
+/* Layout options */
+.editor-content .media-wrapper.layout-block {
+  @apply flex w-full mx-auto my-6;
+}
+
+.editor-content .media-wrapper.layout-inline {
+  @apply inline-flex m-2 align-middle;
+}
+
+.editor-content .media-wrapper.layout-float-left {
+  @apply float-left mr-6 mb-4 mt-2;
+}
+
+.editor-content .media-wrapper.layout-float-right {
+  @apply float-right ml-6 mb-4 mt-2;
+}
+
+/* Alignment within block */
+.editor-content .media-wrapper.align-left {
+  @apply mr-auto ml-0;
+}
+
+.editor-content .media-wrapper.align-center {
+  @apply mx-auto;
+}
+
+.editor-content .media-wrapper.align-right {
+  @apply ml-auto mr-0;
+}
+
+/* Resize handle */
+.editor-content .media-wrapper .resize-handle {
+  @apply absolute bottom-1 right-1 w-4 h-4 bg-indigo-600 rounded-tl cursor-se-resize flex items-center justify-center pointer-events-auto opacity-0 transition-opacity duration-200;
+}
+
+.editor-content .media-wrapper:hover .resize-handle,
+.editor-content .media-wrapper.selected .resize-handle {
+  @apply opacity-100;
+}
+
+/* Media caption */
+.editor-content .media-wrapper .media-caption {
+  @apply block w-full text-center text-xs text-slate-500 mt-2 italic px-2 outline-none select-text border-t border-dashed border-slate-100 pt-1.5;
+}
+
+/* Video wrapper */
+.editor-content .video-container {
+  @apply relative w-full aspect-video rounded overflow-hidden bg-black;
+}
+
+.editor-content .video-container iframe {
+  @apply absolute top-0 left-0 w-full h-full border-0;
+}
+
+/* Document Page layout (Google Docs / Word style) */
+.document-page {
+  @apply bg-white shadow-[0_4px_16px_rgba(0,0,0,0.06)] border border-slate-100 mx-auto px-16 py-14 min-h-[840px] w-full rounded-md;
+}
+
+@media (max-width: 640px) {
+  .document-page {
+    @apply px-6 py-8;
+  }
+}
+
+/* Custom scrollbars for sidebars and tables */
+.custom-scrollbar::-webkit-scrollbar {
+  @apply w-1.5 h-1.5;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 hover:bg-slate-300 rounded-full;
+}
+
+/* Editor Toolbar Floating Bar (Word like ribbon) */
+.formatting-ribbon {
+  @apply border border-slate-200 bg-white/95 backdrop-blur-md rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.04)] sticky top-12 z-30 transition-all duration-200;
+}
+
+/* Floating Media Toolbar for Images & Videos */
+.media-wrapper .media-toolbar {
+  display: none;
+  position: absolute;
+  top: -44px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #1e293b; /* slate-800 */
+  border-radius: 8px;
+  padding: 4px 8px;
+  gap: 4px;
+  align-items: center;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  z-index: 50;
+  white-space: nowrap;
+  user-select: none;
+  border: 1px solid #334155;
+}
+
+.media-wrapper.selected .media-toolbar {
+  display: flex;
+}
+
+.media-toolbar button {
+  background: transparent;
+  border: none;
+  color: #f1f5f9; /* slate-100 */
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.media-toolbar button:hover {
+  background-color: #334155; /* slate-700 */
+}
+
+.media-toolbar button.active {
+  background-color: #6366f1; /* indigo-500 */
+  color: white;
+}
+
+.media-toolbar button.danger {
+  color: #ef4444; /* red-500 */
+}
+
+.media-toolbar button.danger:hover {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.media-toolbar .sep {
+  width: 1px;
+  height: 16px;
+  background-color: #475569; /* slate-600 */
+  margin: 0 4px;
+}
+
+/* Hide toolbar and resize handles when printing */
+@media print {
+  .media-toolbar, .resize-handle, .formatting-ribbon, header, aside, .btn-row, button, .admin-controls-badge {
+    display: none !important;
+  }
+  body {
+    background-color: white !important;
+    color: black !important;
+  }
+  .document-page {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    min-height: auto !important;
+  }
+}
+
+
