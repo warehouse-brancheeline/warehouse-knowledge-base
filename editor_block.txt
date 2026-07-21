@@ -1,0 +1,1076 @@
+{selectedArticle ? (
+            <div className={`w-full mx-auto space-y-4 ${isEditing ? "max-w-none px-4" : "max-w-5xl"}`}>
+              {/* Back to List Link */}
+              {!isEditing && (
+                <button 
+                  onClick={() => {
+                    setSelectedArticle(null);
+                  }}
+                  className="flex items-center space-x-2 text-sm font-bold text-[#243c5a] hover:text-orange-600 transition-colors mb-4 print:hidden"
+                >
+                  <span className="text-lg font-normal">←</span>
+                  <span>Kembali ke daftar</span>
+                </button>
+              )}
+
+              {/* Action Controls Header Bar */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white p-4 border border-slate-200 rounded-2xl shadow-xs print:hidden">
+                <div className="flex items-center space-x-2 text-xs text-slate-400 font-semibold">
+                  <Clock className="h-3.5 w-3.5 text-slate-400" />
+                  <span>Diperbarui: {selectedArticle.date}</span>
+                  <span className="text-slate-300">•</span>
+                  <User className="h-3.5 w-3.5 text-slate-400" />
+                  <span>Penulis: {selectedArticle.author}</span>
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  {!isEditing ? (
+                    <>
+                      {isAdmin && (
+                        <>
+                          <button
+                            onClick={handleStartEdit}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold py-2 px-4 rounded-xl flex items-center space-x-1.5 transition-all shadow-sm"
+                          >
+                            <Edit2 className="h-3.5 w-3.5" />
+                            <span>Edit Artikel</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteArticle(selectedArticle.id)}
+                            className="bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold py-2 px-3 rounded-xl flex items-center space-x-1.5 border border-rose-100 transition-all"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            <span>Hapus</span>
+                          </button>
+                        </>
+                      )}
+                      <button
+                        onClick={handlePrint}
+                        className="bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold py-2 px-3 rounded-xl flex items-center space-x-1.5 transition-all"
+                      >
+                        <Printer className="h-3.5 w-3.5" />
+                        <span>Cetak / PDF</span>
+                      </button>
+                      <button
+                        onClick={handleCopyLink}
+                        className="bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold py-2 px-3 rounded-xl flex items-center space-x-1.5 transition-all"
+                      >
+                        <Share2 className="h-3.5 w-3.5" />
+                        <span>Bagikan</span>
+                      </button>
+                    </>
+                  ) : (
+                    <div className="flex items-center space-x-3 w-full justify-between sm:justify-end">
+                      {/* Autosave badge status indicator */}
+                      <span className="text-xs font-medium flex items-center text-slate-400">
+                        {autosaveStatus === 'saving' && (
+                          <span className="flex items-center">
+                            <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping mr-1.5"></span>
+                            Menyimpan draf...
+                          </span>
+                        )}
+                        {autosaveStatus === 'saved' && (
+                          <span className="text-emerald-600 flex items-center">
+                            <Check className="h-3.5 w-3.5 mr-1" />
+                            Semua draf tersimpan
+                          </span>
+                        )}
+                        {autosaveStatus === 'idle' && (
+                          <span className="flex items-center text-slate-300">
+                            <Save className="h-3.5 w-3.5 mr-1" />
+                            Autosave Aktif
+                          </span>
+                        )}
+                      </span>
+                      <button
+                        onClick={handleSaveAndClose}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold py-2 px-5 rounded-xl flex items-center space-x-1.5 transition-all shadow-md"
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                        <span>Selesai &amp; Simpan</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              
+              <div className="relative flex w-full">
+                
+                {/* --- EDITOR RIBBON TOOLBAR (LEFT SIDEBAR) --- */}
+                {isEditing && (
+                  <div className="formatting-ribbon fixed left-0 top-[64px] h-[calc(100vh-64px)] w-[280px] bg-white border-r border-slate-200 p-5 print:hidden z-40 overflow-y-auto flex flex-col gap-4 shadow-sm" id="editorRibbon">
+                  
+                  {/* Contextual Tab Headers like Microsoft Office/Google Docs */}
+                  {selectedImageElement && (
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 mb-2">
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setActiveRibbonTab('text')}
+                          className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${activeRibbonTab === 'text' ? 'bg-indigo-50 text-indigo-600 shadow-2xs' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'}`}
+                        >
+                          Beranda (Teks)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveRibbonTab('image')}
+                          className={`px-3 py-1 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${activeRibbonTab === 'image' ? 'bg-amber-500 text-white shadow-2xs' : 'bg-amber-50/50 text-amber-700 hover:bg-amber-50'}`}
+                        >
+                          <ImageIcon className="h-3.5 w-3.5" />
+                          <span>Format Gambar</span>
+                        </button>
+                      </div>
+                      <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full animate-pulse flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                        Alat Gambar Aktif
+                      </span>
+                    </div>
+                  )}
+
+                  {activeRibbonTab === 'image' && selectedImageElement ? (
+                    /* --- IMAGE TOOLS COMPACT RIBBON TOOLBAR (MICROSOFT WORD STYLE) --- */
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-1.5 shadow-sm flex flex-col gap-3 overflow-y-auto max-h-[60vh] custom-scrollbar pr-1 select-none text-xs relative animate-in fade-in duration-200">
+                      
+                      {/* 1. PENYESUAIAN (Adjust) */}
+                      <div className="flex flex-col justify-between pr-2.5 border-b border-slate-200 pb-3 min-w-full h-auto">
+                        <div className="flex flex-wrap items-center gap-1.5 h-auto">
+                          {renderRibbonDropdown('brightness', 'Kecerahan', <Sliders className="h-4 w-4 text-indigo-600 shrink-0" />, (
+                            <div className="space-y-2 w-[210px]">
+                              <div className="flex justify-between items-center text-xs">
+                                <span className="font-semibold text-slate-700">Kecerahan</span>
+                                <span className="font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded text-[10px]">{imageBrightness}%</span>
+                              </div>
+                              <input
+                                type="range"
+                                min="50"
+                                max="150"
+                                value={imageBrightness}
+                                onChange={(e) => updateSelectedImage({ brightness: parseInt(e.target.value) })}
+                                className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                              />
+                              <div className="flex justify-between text-[9px] text-slate-400 font-bold font-mono">
+                                <span>50%</span>
+                                <span>100%</span>
+                                <span>150%</span>
+                              </div>
+                            </div>
+                          ))}
+
+                          {renderRibbonDropdown('contrast', 'Kontras', <Sliders className="h-4 w-4 text-indigo-600 shrink-0 rotate-90" />, (
+                            <div className="space-y-2 w-[210px]">
+                              <div className="flex justify-between items-center text-xs">
+                                <span className="font-semibold text-slate-700">Kontras</span>
+                                <span className="font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded text-[10px]">{imageContrast}%</span>
+                              </div>
+                              <input
+                                type="range"
+                                min="50"
+                                max="150"
+                                value={imageContrast}
+                                onChange={(e) => updateSelectedImage({ contrast: parseInt(e.target.value) })}
+                                className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                              />
+                              <div className="flex justify-between text-[9px] text-slate-400 font-bold font-mono">
+                                <span>50%</span>
+                                <span>100%</span>
+                                <span>150%</span>
+                              </div>
+                            </div>
+                          ))}
+
+                          {renderRibbonDropdown('recolor', 'Efek Warna', <Palette className="h-4 w-4 text-indigo-600 shrink-0" />, (
+                            <div className="space-y-1 w-[200px]">
+                              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1 mb-1">Pilih Filter Warna</span>
+                              {[
+                                { id: 'none', label: 'Warna Asli (Normal)' },
+                                { id: 'grayscale', label: 'Hitam Putih (Grayscale)' },
+                                { id: 'sepia', label: 'Sepia (Retro Klasik)' },
+                                { id: 'invert', label: 'Negatif (Invert)' },
+                                { id: 'hue-90', label: 'Biru / Hijau (Hue 90°)' },
+                                { id: 'hue-180', label: 'Merah / Ungu (Hue 180°)' },
+                              ].map((opt) => (
+                                <button
+                                  key={opt.id}
+                                  type="button"
+                                  onClick={() => {
+                                    updateSelectedImage({ recolor: opt.id });
+                                    setOpenImagePopover(null);
+                                  }}
+                                  className={`w-full text-left px-2.5 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-all cursor-pointer ${imageRecolor === opt.id ? 'bg-indigo-50 text-indigo-600 font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+                                >
+                                  <span>{opt.label}</span>
+                                  {imageRecolor === opt.id && <Check className="h-3 w-3 text-indigo-600 shrink-0" />}
+                                </button>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-left mt-2 leading-none select-none">Penyesuaian</span>
+                      </div>
+
+                      {/* 2. BINGKAI & SUDUT (Borders & Radius) */}
+                      <div className="flex flex-col justify-between px-2.5 border-b border-slate-200 pb-3 min-w-full h-auto">
+                        <div className="flex flex-wrap items-center gap-1.5 h-auto">
+                          {renderRibbonDropdown('borderColor', 'Warna Bingkai', <Palette className="h-4 w-4 text-emerald-600 shrink-0" />, (
+                            <div className="space-y-2.5 w-[220px] p-1">
+                              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">Palet Warna Bingkai</span>
+                              <div className="grid grid-cols-6 gap-1.5">
+                                {[
+                                  '#000000', '#ffffff', '#ef4444', '#f97316', '#f59e0b', '#10b981',
+                                  '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#ec4899', '#cbd5e1',
+                                  '#94a3b8', '#64748b', '#475569', '#334155', '#1e293b', '#0f172a'
+                                ].map((hex) => (
+                                  <button
+                                    key={hex}
+                                    type="button"
+                                    onClick={() => {
+                                      updateSelectedImage({ borderColor: hex });
+                                    }}
+                                    className={`w-7 h-7 rounded-full border border-slate-200 transition-all cursor-pointer flex items-center justify-center relative hover:scale-110 shadow-3xs`}
+                                    style={{ backgroundColor: hex }}
+                                    title={hex}
+                                  >
+                                    {imageBorderColor.toLowerCase() === hex.toLowerCase() && (
+                                      <span className={`w-2 h-2 rounded-full ${hex.toLowerCase() === '#ffffff' ? 'bg-black' : 'bg-white'}`}></span>
+                                    )}
+                                  </button>
+                                ))}
+                              </div>
+                              <div className="pt-2 border-t border-slate-100 flex gap-2 items-center">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">Kustom:</span>
+                                <input
+                                  type="color"
+                                  value={imageBorderColor}
+                                  onChange={(e) => updateSelectedImage({ borderColor: e.target.value })}
+                                  className="w-8 h-6 border border-slate-200 rounded p-0 cursor-pointer"
+                                />
+                                <span className="text-[10px] font-semibold text-slate-600 font-mono">{imageBorderColor}</span>
+                              </div>
+                            </div>
+                          ))}
+
+                          {renderRibbonDropdown('borderWidth', 'Tebal', <Frame className="h-4 w-4 text-emerald-600 shrink-0" />, (
+                            <div className="space-y-1 w-[180px]">
+                              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1 mb-1">Tebal Bingkai</span>
+                              {[
+                                { id: '0px', label: 'Tanpa Bingkai (0px)' },
+                                { id: '1px', label: 'Sangat Tipis (1px)' },
+                                { id: '2px', label: 'Tipis (2px)' },
+                                { id: '3px', label: 'Sedang (3px)' },
+                                { id: '4px', label: 'Tebal (4px)' },
+                                { id: '6px', label: 'Sangat Tebal (6px)' },
+                              ].map((opt) => (
+                                <button
+                                  key={opt.id}
+                                  type="button"
+                                  onClick={() => {
+                                    updateSelectedImage({ borderWidth: opt.id });
+                                    setOpenImagePopover(null);
+                                  }}
+                                  className={`w-full text-left px-2.5 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-all cursor-pointer ${imageBorderWidth === opt.id ? 'bg-emerald-50 text-emerald-700 font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+                                >
+                                  <span>{opt.label}</span>
+                                  {imageBorderWidth === opt.id && <Check className="h-3 w-3 text-emerald-600 shrink-0" />}
+                                </button>
+                              ))}
+                            </div>
+                          ))}
+
+                          {renderRibbonDropdown('borderStyle', 'Gaya', <Frame className="h-4 w-4 text-emerald-600 shrink-0 rotate-45" />, (
+                            <div className="space-y-1 w-[180px]">
+                              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1 mb-1">Gaya Bingkai</span>
+                              {[
+                                { id: 'solid', label: 'Garis Lurus (Solid)' },
+                                { id: 'dashed', label: 'Putus-Putus (Dashed)' },
+                                { id: 'dotted', label: 'Titik-Titik (Dotted)' },
+                                { id: 'double', label: 'Garis Ganda (Double)' },
+                              ].map((opt) => (
+                                <button
+                                  key={opt.id}
+                                  type="button"
+                                  onClick={() => {
+                                    updateSelectedImage({ borderStyle: opt.id });
+                                    setOpenImagePopover(null);
+                                  }}
+                                  className={`w-full text-left px-2.5 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-all cursor-pointer ${imageBorderStyle === opt.id ? 'bg-emerald-50 text-emerald-700 font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+                                >
+                                  <span>{opt.label}</span>
+                                  {imageBorderStyle === opt.id && <Check className="h-3 w-3 text-emerald-600 shrink-0" />}
+                                </button>
+                              ))}
+                            </div>
+                          ))}
+
+                          {renderRibbonDropdown('borderRadius', 'Sudut Bulat', <Crop className="h-4 w-4 text-emerald-600 shrink-0" />, (
+                            <div className="space-y-1 w-[200px]">
+                              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1 mb-1">Kelengkungan Sudut</span>
+                              {[
+                                { id: 'rounded-none', label: 'Tajam / Siku (0px)' },
+                                { id: 'rounded-sm', label: 'Sangat Kecil (2px)' },
+                                { id: 'rounded-md', label: 'Sedikit Bulat (4px)' },
+                                { id: 'rounded-lg', label: 'Bulat Standar (8px)' },
+                                { id: 'rounded-xl', label: 'Cukup Bulat (12px)' },
+                                { id: 'rounded-2xl', label: 'Sangat Bulat (16px)' },
+                                { id: 'rounded-full', label: 'Bulat Penuh (Oval)' },
+                              ].map((opt) => (
+                                <button
+                                  key={opt.id}
+                                  type="button"
+                                  onClick={() => {
+                                    updateSelectedImage({ borderRadius: opt.id });
+                                    setOpenImagePopover(null);
+                                  }}
+                                  className={`w-full text-left px-2.5 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-all cursor-pointer ${imageBorderRadius === opt.id ? 'bg-emerald-50 text-emerald-700 font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+                                >
+                                  <span>{opt.label}</span>
+                                  {imageBorderRadius === opt.id && <Check className="h-3 w-3 text-emerald-600 shrink-0" />}
+                                </button>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-left mt-2 leading-none select-none">Bingkai &amp; Sudut</span>
+                      </div>
+
+                      {/* 3. PELETAKAN & EFEK (Arrange & Shadow) */}
+                      <div className="flex flex-col justify-between px-2.5 border-b border-slate-200 pb-3 min-w-full h-auto">
+                        <div className="flex flex-wrap items-center gap-1.5 h-auto">
+                          {renderRibbonDropdown('position', 'Tata Letak', <AlignJustify className="h-4 w-4 text-amber-600 shrink-0" />, (
+                            <div className="space-y-1 w-[220px]">
+                              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1 mb-1">Aliran Teks (Wrap)</span>
+                              {[
+                                { id: 'layout-block', label: 'Baris Baru (Tengah)', desc: 'Gambar di tengah, teks terpisah' },
+                                { id: 'layout-float-left', label: 'Samping Kiri', desc: 'Gambar di kiri, teks mengalir di kanan' },
+                                { id: 'layout-float-right', label: 'Samping Kanan', desc: 'Gambar di kanan, teks mengalir di kiri' },
+                                { id: 'layout-inline', label: 'Sejajar Teks (Inline)', desc: 'Menyatu seperti karakter huruf' },
+                              ].map((opt) => {
+                                const isActive = selectedImageElement.classList.contains(opt.id) || (opt.id === 'layout-block' && selectedImageElement.classList.contains('layout-block') && !selectedImageElement.classList.contains('layout-float-left') && !selectedImageElement.classList.contains('layout-float-right') && !selectedImageElement.classList.contains('layout-inline'));
+                                return (
+                                  <button
+                                    key={opt.id}
+                                    type="button"
+                                    onClick={() => {
+                                      updateSelectedImage({ layout: opt.id as any });
+                                      setOpenImagePopover(null);
+                                    }}
+                                    className={`w-full text-left px-2.5 py-1.5 rounded-lg flex flex-col gap-0.5 transition-all cursor-pointer ${isActive ? 'bg-amber-50 text-amber-700' : 'text-slate-600 hover:bg-slate-50'}`}
+                                  >
+                                    <span className="text-xs font-bold flex items-center justify-between">
+                                      <span>{opt.label}</span>
+                                      {isActive && <Check className="h-3 w-3 text-amber-600 shrink-0" />}
+                                    </span>
+                                    <span className="text-[9px] text-slate-400 font-medium leading-tight">{opt.desc}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ))}
+
+                          {renderRibbonDropdown('rotate', 'Putar & Balik', <RotateCw className="h-4 w-4 text-amber-600 shrink-0" />, (
+                            <div className="space-y-1.5 w-[190px]">
+                              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1 mb-1">Rotasi &amp; Mirror</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  updateSelectedImage({ rotate: (imageRotate + 90) % 360 });
+                                }}
+                                className="w-full text-left px-2.5 py-1.5 text-xs font-medium rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-950 flex items-center gap-2 cursor-pointer"
+                              >
+                                <RotateCw className="h-3 w-3 text-amber-500 shrink-0" />
+                                <span>Putar Kanan 90°</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  updateSelectedImage({ rotate: (imageRotate - 90 + 360) % 360 });
+                                }}
+                                className="w-full text-left px-2.5 py-1.5 text-xs font-medium rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-950 flex items-center gap-2 cursor-pointer"
+                              >
+                                <RotateCw className="h-3 w-3 text-amber-500 shrink-0 -scale-x-100" />
+                                <span>Putar Kiri 90°</span>
+                              </button>
+                              
+                              <div className="border-t border-slate-100 my-1.5"></div>
+                              
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  updateSelectedImage({ scaleX: imageScaleX === 1 ? -1 : 1 });
+                                }}
+                                className={`w-full text-left px-2.5 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between cursor-pointer ${imageScaleX === -1 ? 'bg-amber-50 text-amber-700' : 'text-slate-600 hover:bg-slate-50'}`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <FlipHorizontal className="h-3.5 w-3.5 text-amber-600" />
+                                  <span>Balik Horisontal</span>
+                                </div>
+                                {imageScaleX === -1 && <Check className="h-3 w-3 text-amber-600" />}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  updateSelectedImage({ scaleY: imageScaleY === 1 ? -1 : 1 });
+                                }}
+                                className={`w-full text-left px-2.5 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between cursor-pointer ${imageScaleY === -1 ? 'bg-amber-50 text-amber-700' : 'text-slate-600 hover:bg-slate-50'}`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <FlipVertical className="h-3.5 w-3.5 text-amber-600" />
+                                  <span>Balik Vertikal</span>
+                                </div>
+                                {imageScaleY === -1 && <Check className="h-3 w-3 text-amber-600" />}
+                              </button>
+                            </div>
+                          ))}
+
+                          {renderRibbonDropdown('shadow', 'Efek Bayangan', <Sparkles className="h-4 w-4 text-amber-600 shrink-0" />, (
+                            <div className="space-y-1 w-[180px]">
+                              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1 mb-1">Gaya Bayangan (Elevation)</span>
+                              {[
+                                { id: 'none', label: 'Tanpa Bayangan' },
+                                { id: 'shadow-xs', label: 'Sangat Tipis (XS)' },
+                                { id: 'shadow-sm', label: 'Tipis (SM)' },
+                                { id: 'shadow-md', label: 'Sedang (MD)' },
+                                { id: 'shadow-lg', label: 'Besar (LG)' },
+                                { id: 'shadow-xl', label: 'Sangat Besar (XL)' },
+                                { id: 'shadow-2xl', label: 'Sangat Tebal (2XL)' },
+                                { id: 'shadow-inner', label: 'Bayangan Dalam' },
+                              ].map((opt) => (
+                                <button
+                                  key={opt.id}
+                                  type="button"
+                                  onClick={() => {
+                                    updateSelectedImage({ shadow: opt.id });
+                                    setOpenImagePopover(null);
+                                  }}
+                                  className={`w-full text-left px-2.5 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-all cursor-pointer ${imageShadow === opt.id ? 'bg-amber-50 text-amber-700 font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+                                >
+                                  <span>{opt.label}</span>
+                                  {imageShadow === opt.id && <Check className="h-3 w-3 text-amber-600 shrink-0" />}
+                                </button>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-left mt-2 leading-none select-none">Peletakan &amp; Efek</span>
+                      </div>
+
+                      {/* 4. UKURAN & PROPORSI (Size & Aspect) */}
+                      <div className="flex flex-col justify-between px-2.5 border-b border-slate-200 pb-3 min-w-full h-auto">
+                        <div className="flex flex-wrap items-center gap-1.5 h-auto">
+                          {renderRibbonDropdown('size', 'Ukuran', <Maximize2 className="h-4 w-4 text-purple-600 shrink-0" />, (
+                            <div className="space-y-3 w-[210px] p-1">
+                              <div>
+                                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Preset Lebar</span>
+                                <div className="grid grid-cols-4 gap-1">
+                                  {['25%', '50%', '75%', '100%'].map((pct) => (
+                                    <button
+                                      key={pct}
+                                      type="button"
+                                      onClick={() => {
+                                        updateSelectedImage({ width: pct });
+                                      }}
+                                      className={`py-1 text-xs font-semibold rounded-lg border cursor-pointer transition-all ${imageWidth === pct ? 'bg-purple-600 border-purple-600 text-white shadow-xs' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}
+                                    >
+                                      {pct}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="border-t border-slate-100 pt-2.5">
+                                <div className="flex justify-between items-center text-xs mb-1.5">
+                                  <span className="font-semibold text-slate-600">Presisi Lebar</span>
+                                  <span className="font-bold text-purple-600 font-mono">{imageWidth}</span>
+                                </div>
+                                <input
+                                  type="range"
+                                  min="10"
+                                  max="100"
+                                  value={parseInt(imageWidth) || 60}
+                                  onChange={(e) => updateSelectedImage({ width: `${e.target.value}%` })}
+                                  className="w-full accent-purple-600 h-1 cursor-pointer bg-slate-200 rounded-lg appearance-none"
+                                />
+                              </div>
+                            </div>
+                          ))}
+
+                          {/* Height Precision Input */}
+                          <div className="flex items-center bg-white border border-slate-200 rounded-lg px-2 h-7 gap-1">
+                            <span className="text-[10px] font-bold text-slate-400 select-none uppercase">Tinggi:</span>
+                            <input
+                              type="text"
+                              value={imageHeight === 'auto' ? 'Auto' : (parseInt(imageHeight) / 30).toFixed(1)}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val.toLowerCase() === 'auto' || val === '') {
+                                  updateSelectedImage({ height: 'auto' });
+                                } else {
+                                  const parsed = parseFloat(val);
+                                  if (!isNaN(parsed)) {
+                                    updateSelectedImage({ height: `${Math.round(parsed * 30)}px` });
+                                  }
+                                }
+                              }}
+                              className="w-10 text-center text-xs font-semibold text-slate-700 bg-transparent border-none focus:outline-none focus:ring-0 p-0 font-mono"
+                              title="Tinggi gambar dalam cm (kosongkan atau isi 'Auto' untuk mengikuti aspek rasio otomatis)"
+                            />
+                            <span className="text-[10px] text-slate-400 font-semibold select-none">cm</span>
+                            
+                            <div className="flex flex-col border-l border-slate-100 pl-1.5 ml-1">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (imageHeight === 'auto') {
+                                    updateSelectedImage({ height: '150px' });
+                                  } else {
+                                    const curr = parseInt(imageHeight) || 150;
+                                    updateSelectedImage({ height: `${Math.min(1200, curr + 15)}px` });
+                                  }
+                                }}
+                                className="text-[8px] text-slate-400 hover:text-purple-600 leading-none h-2.5 flex items-center justify-center cursor-pointer"
+                              >
+                                ▲
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (imageHeight !== 'auto') {
+                                    const curr = parseInt(imageHeight) || 150;
+                                    const next = curr - 15;
+                                    if (next <= 30) {
+                                      updateSelectedImage({ height: 'auto' });
+                                    } else {
+                                      updateSelectedImage({ height: `${next}px` });
+                                    }
+                                  }
+                                }}
+                                className="text-[8px] text-slate-400 hover:text-purple-600 leading-none h-2.5 flex items-center justify-center cursor-pointer"
+                              >
+                                ▼
+                              </button>
+                            </div>
+                          </div>
+
+                          {renderRibbonDropdown('aspectRatio', 'Proporsi', <Crop className="h-4 w-4 text-purple-600 shrink-0" />, (
+                            <div className="space-y-1 w-[180px]">
+                              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1 mb-1">Rasio Proporsi</span>
+                              {[
+                                { id: 'auto', label: 'Asli / Proporsional' },
+                                { id: '1 / 1', label: 'Kotak (1:1)' },
+                                { id: '16 / 9', label: 'Layar Lebar (16:9)' },
+                                { id: '4 / 3', label: 'Klasik (4:3)' },
+                                { id: '3 / 2', label: 'Foto (3:2)' },
+                              ].map((opt) => (
+                                <button
+                                  key={opt.id}
+                                  type="button"
+                                  onClick={() => {
+                                    updateSelectedImage({ aspectRatio: opt.id });
+                                    setOpenImagePopover(null);
+                                  }}
+                                  className={`w-full text-left px-2.5 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-all cursor-pointer ${imageAspectRatio === opt.id ? 'bg-purple-50 text-purple-700 font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+                                >
+                                  <span>{opt.label}</span>
+                                  {imageAspectRatio === opt.id && <Check className="h-3 w-3 text-purple-600 shrink-0" />}
+                                </button>
+                              ))}
+                            </div>
+                          ))}
+
+                          {renderRibbonDropdown('objectFit', 'Kecocokan', <Maximize2 className="h-4 w-4 text-purple-600 shrink-0" />, (
+                            <div className="space-y-1 w-[200px]">
+                              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1 mb-1">Gaya Fit / Kecocokan</span>
+                              {[
+                                { id: 'cover', label: 'Isi Penuh (Crop)', desc: 'Skala penuh tanpa distorsi, potong sisi berlebih' },
+                                { id: 'contain', label: 'Muat Penuh (Letterbox)', desc: 'Tampilkan seluruh gambar di dalam bingkai' },
+                                { id: 'fill', label: 'Regangkan (Stretch)', desc: 'Regangkan gambar agar mengisi penuh bingkai' },
+                              ].map((opt) => (
+                                <button
+                                  key={opt.id}
+                                  type="button"
+                                  onClick={() => {
+                                    updateSelectedImage({ objectFit: opt.id });
+                                    setOpenImagePopover(null);
+                                  }}
+                                  className={`w-full text-left px-2.5 py-1.5 rounded-lg flex flex-col gap-0.5 transition-all cursor-pointer ${imageObjectFit === opt.id ? 'bg-purple-50 text-purple-700 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
+                                >
+                                  <span className="text-xs font-semibold flex items-center justify-between">
+                                    <span>{opt.label}</span>
+                                    {imageObjectFit === opt.id && <Check className="h-3 w-3 text-purple-600 shrink-0" />}
+                                  </span>
+                                  <span className="text-[9px] text-slate-400 font-medium leading-none">{opt.desc}</span>
+                                </button>
+                              ))}
+                            </div>
+                          ))}
+
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-left mt-2 leading-none select-none">Ukuran &amp; Proporsi</span>
+                      </div>
+
+                      {/* 5. KETERANGAN (Caption) */}
+                      <div className="flex flex-col justify-between px-2.5 border-b border-slate-200 pb-3 min-w-full h-auto">
+                        <div className="flex flex-wrap items-center gap-1.5 h-auto">
+                          <input
+                            type="text"
+                            placeholder="Tulis keterangan gambar..."
+                            value={imageCaption}
+                            onChange={(e) => updateSelectedImage({ caption: e.target.value })}
+                            className="w-full text-xs font-medium bg-white border border-slate-200 rounded-lg px-2 py-0.5 text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 h-7"
+                            title="Tulis teks deskripsi/caption di bawah gambar secara langsung dan dinamis"
+                          />
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-left mt-2 leading-none select-none">Keterangan (Caption)</span>
+                      </div>
+
+                      {/* 6. AKSI MEDIA (Aksi) */}
+                      <div className="flex flex-col justify-between pl-2.5 min-w-full h-auto">
+                        <div className="flex flex-wrap items-center gap-1.5 h-auto">
+                          <button
+                            type="button"
+                            onClick={() => updateSelectedImage({
+                              brightness: 100,
+                              contrast: 100,
+                              recolor: 'none',
+                              borderColor: '#cbd5e1',
+                              borderWidth: '0px',
+                              borderStyle: 'solid',
+                              borderRadius: 'rounded-md',
+                              aspectRatio: 'auto',
+                              objectFit: 'cover',
+                              shadow: 'none',
+                              rotate: 0,
+                              scaleX: 1,
+                              scaleY: 1,
+                              width: '60%',
+                              height: 'auto'
+                            })}
+                            className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer hover:text-slate-800 h-7"
+                            title="Reset semua efek gambar ke default"
+                          >
+                            <RefreshCw className="h-3 w-3 text-slate-500" />
+                            <span>Reset</span>
+                          </button>
+                          
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (confirm('Hapus media ini dari dokumen?')) {
+                                selectedImageElement.remove();
+                                setSelectedImageElement(null);
+                                setActiveRibbonTab('text');
+                                if (editorRef.current) {
+                                  setEditorContent(editorRef.current.innerHTML);
+                                }
+                              }
+                            }}
+                            className="px-2.5 py-1 bg-white hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-semibold border border-rose-200 hover:border-rose-300 transition-all flex items-center gap-1 cursor-pointer hover:text-rose-700 h-7"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            <span>Hapus</span>
+                          </button>
+                          
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedImageElement(null);
+                              setActiveRibbonTab('text');
+                            }}
+                            className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer h-7 shadow-xs"
+                          >
+                            <Check className="h-3.5 w-3.5" />
+                            <span>Selesai</span>
+                          </button>
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right mt-0.5 leading-none select-none">Aksi Media</span>
+                      </div>
+
+                    </div>
+                  ) : (
+                    /* --- DOCUMENT TEXT FORMATTING RIBBON --- */
+                    <div className="flex flex-col gap-2">
+                    
+                    {/* Undo / Redo group */}
+                    <div className="flex flex-wrap items-center bg-slate-100 rounded-lg p-0.5 gap-0.5 mb-1">
+                      <button
+                        onClick={handleUndo}
+                        disabled={historyIndex <= 0}
+                        className="p-1.5 hover:bg-white text-slate-600 disabled:opacity-30 rounded transition-all"
+                        title="Urungkan (Undo)"
+                      >
+                        <Undo2 className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={handleRedo}
+                        disabled={historyIndex >= historyStack.length - 1}
+                        className="p-1.5 hover:bg-white text-slate-600 disabled:opacity-30 rounded transition-all"
+                        title="Ulangi (Redo)"
+                      >
+                        <Redo2 className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {/* Font Family Selection */}
+                    <div className="relative flex items-center bg-slate-100 rounded-lg p-0.5 mr-1">
+                      <select
+                        onChange={(e) => executeCommand('fontName', e.target.value)}
+                        className="bg-transparent text-xs font-semibold px-2 py-1 pr-6 border-none focus:outline-none focus:ring-0 text-slate-700 cursor-pointer"
+                        title="Jenis Huruf"
+                      >
+                        <option value="Inter">Inter (Sans)</option>
+                        <option value="Arial">Arial</option>
+                        <option value="Times New Roman">Times Roman (Serif)</option>
+                        <option value="Georgia">Georgia</option>
+                        <option value="Courier New">Courier (Mono)</option>
+                      </select>
+                    </div>
+
+                    {/* Font Size Selection */}
+                    <div className="relative flex items-center bg-slate-100 rounded-lg p-0.5 mr-1">
+                      <select
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          // Standardize size setting with custom span in editable container
+                          executeCommand('fontSize', val);
+                        }}
+                        className="bg-transparent text-xs font-semibold px-2 py-1 border-none focus:outline-none focus:ring-0 text-slate-700 cursor-pointer"
+                        title="Ukuran Huruf"
+                        defaultValue="3"
+                      >
+                        <option value="1">Kecil (12px)</option>
+                        <option value="2">Normal (14px)</option>
+                        <option value="3">Standar (16px)</option>
+                        <option value="4">Sedang (18px)</option>
+                        <option value="5">Besar (24px)</option>
+                        <option value="6">Sangat Besar (32px)</option>
+                        <option value="7">Display (48px)</option>
+                      </select>
+                    </div>
+
+                    {/* Presets heading formatting */}
+                    <div className="flex flex-wrap items-center bg-slate-100 rounded-lg p-0.5 gap-0.5 mb-1">
+                      <button
+                        onClick={() => executeCommand('formatBlock', '<p>')}
+                        className="px-2 py-1 text-xs font-bold hover:bg-white text-slate-600 rounded transition-all"
+                        title="Format Paragraf"
+                      >
+                        P
+                      </button>
+                      <button
+                        onClick={() => executeCommand('formatBlock', '<h1>')}
+                        className="p-1 hover:bg-white text-slate-600 rounded transition-all"
+                        title="Heading 1"
+                      >
+                        <Heading1 className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => executeCommand('formatBlock', '<h2>')}
+                        className="p-1 hover:bg-white text-slate-600 rounded transition-all"
+                        title="Heading 2"
+                      >
+                        <Heading2 className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => executeCommand('formatBlock', '<h3>')}
+                        className="p-1 hover:bg-white text-slate-600 rounded transition-all"
+                        title="Heading 3"
+                      >
+                        <Heading3 className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {/* Basic Styling Buttons */}
+                    <div className="flex flex-wrap items-center bg-slate-100 rounded-lg p-0.5 gap-0.5 mb-1">
+                      <button
+                        onClick={() => executeCommand('bold')}
+                        className={`p-1.5 hover:bg-white rounded transition-all ${activeFormats.includes('bold') ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-600'}`}
+                        title="Tebal (Bold)"
+                      >
+                        <Bold className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => executeCommand('italic')}
+                        className={`p-1.5 hover:bg-white rounded transition-all ${activeFormats.includes('italic') ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-600'}`}
+                        title="Miring (Italic)"
+                      >
+                        <Italic className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => executeCommand('underline')}
+                        className={`p-1.5 hover:bg-white rounded transition-all ${activeFormats.includes('underline') ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-600'}`}
+                        title="Garis Bawah (Underline)"
+                      >
+                        <Underline className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => executeCommand('strikeThrough')}
+                        className={`p-1.5 hover:bg-white rounded transition-all ${activeFormats.includes('strikethrough') ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-600'}`}
+                        title="Coret (Strikethrough)"
+                      >
+                        <Strikethrough className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {/* Color picker dropdown triggers */}
+                    <div className="relative flex items-center bg-slate-100 rounded-lg p-0.5 mr-1">
+                      {/* Text Color Picker */}
+                      <button
+                        onClick={() => {
+                          setShowTextColorPicker(!showTextColorPicker);
+                          setShowHighlightColorPicker(false);
+                        }}
+                        className="p-1.5 hover:bg-white text-slate-600 rounded transition-all flex items-center"
+                        title="Warna Huruf"
+                      >
+                        <Palette className="h-4 w-4" />
+                        <ChevronDown className="h-3 w-3 ml-0.5" />
+                      </button>
+                      {showTextColorPicker && (
+                        <div className="absolute top-10 left-0 bg-white border border-slate-200 rounded-xl p-2.5 shadow-xl grid grid-cols-5 gap-1.5 z-50">
+                          {['#000000', '#334155', '#4f46e5', '#059669', '#dc2626', '#d97706', '#2563eb', '#7c3aed', '#db2777', '#4b5563'].map((color) => (
+                            <button
+                              key={color}
+                              onClick={() => {
+                                executeCommand('foreColor', color);
+                                setShowTextColorPicker(false);
+                              }}
+                              className="h-5 w-5 rounded border border-slate-200"
+                              style={{ backgroundColor: color }}
+                            />
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Text Highlight Color Picker */}
+                      <button
+                        onClick={() => {
+                          setShowHighlightColorPicker(!showHighlightColorPicker);
+                          setShowTextColorPicker(false);
+                        }}
+                        className="p-1.5 hover:bg-white text-slate-600 rounded transition-all flex items-center"
+                        title="Sorot Warna (Highlight)"
+                      >
+                        <Highlighter className="h-4 w-4" />
+                        <ChevronDown className="h-3 w-3 ml-0.5" />
+                      </button>
+                      {showHighlightColorPicker && (
+                        <div className="absolute top-10 left-8 bg-white border border-slate-200 rounded-xl p-2.5 shadow-xl grid grid-cols-5 gap-1.5 z-50">
+                          {['transparent', '#fef08a', '#bbf7d0', '#bfdbfe', '#fbcfe8', '#fef3c7', '#c7d2fe', '#fed7aa', '#e9d5ff', '#ddd6fe'].map((color) => (
+                            <button
+                              key={color}
+                              onClick={() => {
+                                executeCommand('hiliteColor', color);
+                                setShowHighlightColorPicker(false);
+                              }}
+                              className="h-5 w-5 rounded border border-slate-200"
+                              style={{ backgroundColor: color }}
+                              title={color === 'transparent' ? 'No Highlight' : color}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Alignment group */}
+                    <div className="flex flex-wrap items-center bg-slate-100 rounded-lg p-0.5 gap-0.5 mb-1">
+                      <button
+                        onClick={() => executeCommand('justifyLeft')}
+                        className="p-1.5 hover:bg-white text-slate-600 rounded transition-all"
+                        title="Rata Kiri"
+                      >
+                        <AlignLeft className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => executeCommand('justifyCenter')}
+                        className="p-1.5 hover:bg-white text-slate-600 rounded transition-all"
+                        title="Rata Tengah"
+                      >
+                        <AlignCenter className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => executeCommand('justifyRight')}
+                        className="p-1.5 hover:bg-white text-slate-600 rounded transition-all"
+                        title="Rata Kanan"
+                      >
+                        <AlignRight className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => executeCommand('justifyFull')}
+                        className="p-1.5 hover:bg-white text-slate-600 rounded transition-all"
+                        title="Rata Kiri Kanan"
+                      >
+                        <AlignJustify className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {/* Lists Group */}
+                    <div className="flex flex-wrap items-center bg-slate-100 rounded-lg p-0.5 gap-0.5 mb-1">
+                      <button
+                        onClick={() => executeCommand('insertUnorderedList')}
+                        className="p-1.5 hover:bg-white text-slate-600 rounded transition-all"
+                        title="Daftar Simbol (Bullets)"
+                      >
+                        <List className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => executeCommand('insertOrderedList')}
+                        className="p-1.5 hover:bg-white text-slate-600 rounded transition-all"
+                        title="Daftar Angka (Numbering)"
+                      >
+                        <ListOrdered className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={insertChecklist}
+                        className="p-1.5 hover:bg-white text-slate-600 rounded transition-all"
+                        title="Checklist Interaktif"
+                      >
+                        <CheckSquare className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {/* Layout Inserts (Table, Links, Media) */}
+                    <div className="flex flex-wrap items-center bg-slate-100 rounded-lg p-0.5 gap-0.5 mb-1">
+                      <button
+                        onClick={insertTableHTML}
+                        className="p-1.5 hover:bg-white text-slate-600 rounded transition-all"
+                        title="Sisipkan Tabel"
+                      >
+                        <TableIcon className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={insertLink}
+                        className="p-1.5 hover:bg-white text-slate-600 rounded transition-all"
+                        title="Sisipkan Tautan"
+                      >
+                        <LinkIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {/* Image & Video Insertion */}
+                    <div className="flex items-center bg-slate-100 rounded-lg p-0.5">
+                      <button
+                        onClick={triggerImageUpload}
+                        className="p-1.5 hover:bg-white text-slate-600 rounded transition-all"
+                        title="Unggah Gambar"
+                      >
+                        <ImageIcon className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={triggerYoutubeEmbed}
+                        className="p-1.5 hover:bg-white text-slate-600 rounded transition-all"
+                        title="Sematkan Video YouTube"
+                      >
+                        <Youtube className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                  </div>
+
+                )}
+
+              </div>
+            )}
+                
+                <div className={`flex-1 min-w-0 space-y-4 w-full transition-all ${isEditing ? "ml-[280px]" : ""}`}>
+                  {/* --- ARTICLE CORE META INPUTS (MOVED OUT OF RIBBON) --- */}
+              {isEditing && (
+                <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm print:hidden">
+                  <div className="flex flex-col md:flex-row gap-3">
+                    <div className="flex-1">
+                      <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Judul Dokumen</label>
+                      <input
+                        type="text"
+                        placeholder="Masukkan Judul Dokumen Utama..."
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        className="w-full text-sm font-bold bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div className="w-full md:w-52">
+                      <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Kategori Folder</label>
+                      <select
+                        value={editCategory}
+                        onChange={(e) => setEditCategory(e.target.value as Category)}
+                        className="w-full text-sm font-semibold bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      >
+                        {CATEGORIES.map((cat) => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Deskripsi Singkat</label>
+                      <input
+                        type="text"
+                        placeholder="Deskripsi singkat atau sub-judul halaman..."
+                        value={editDesc}
+                        onChange={(e) => setEditDesc(e.target.value)}
+                        className="w-full text-sm bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+{/* --- DOCUMENT CANVAS SHEET (Word/Google Docs style) --- */}
+              <div
+                className="document-page relative p-12 custom-scrollbar transition-transform duration-200"
+                id="articleView"
+                onDragOver={isEditing ? handleDragOver : undefined}
+                onDrop={isEditing ? handleDrop : undefined}
+                style={{
+                  transform: `scale(${zoomLevel / 100})`,
+                  transformOrigin: 'top center',
+                  marginBottom: zoomLevel > 100 ? `${(zoomLevel - 100)}%` : '0'
+                }}
+              >
+                
+                {/* Meta Title block inside Reading sheet */}
+                {!isEditing && (
+                  <div className="border-b border-slate-100 pb-5 mb-8">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <span className={`text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded-md ${CATEGORY_COLORS[selectedArticle.category].bg} ${CATEGORY_COLORS[selectedArticle.category].text} border ${CATEGORY_COLORS[selectedArticle.category].border}`}>
+                        {CATEGORY_COLORS[selectedArticle.category].icon} {selectedArticle.category}
+                      </span>
+                    </div>
+                    <h1 className="text-4xl font-extrabold text-slate-900 leading-tight mb-2" id="viewTitle">
+                      {selectedArticle.title}
+                    </h1>
+                    <p className="text-base text-slate-500 font-medium italic mt-1.5">
+                      {selectedArticle.desc || 'Tidak ada deskripsi'}
+                    </p>
+                  </div>
+                )}
+
+                {/* Main Content editable area */}
+                <div
+                  ref={editorRef}
+                  id="contentEditor"
+                  contentEditable={isEditing}
+                  onInput={(e) => {
+                    const html = (e.target as HTMLDivElement).innerHTML;
+                    setEditorContent(html);
+                    pushToHistory(html);
+                  }}
+                  onBlur={checkSelectionFormats}
+                  onKeyUp={checkSelectionFormats}
+                  onMouseUp={checkSelectionFormats}
+                  onPaste={isEditing ? handlePaste : undefined}
+                  onClick={isEditing ? handleEditorClick : handleViewerClick}
+                  onMouseDown={isEditing ? handleMouseDown : undefined}
+                  className="editor-content custom-scrollbar"
+                  style={{
+                    fontFamily: 'inherit',
+                  }}
+                />
+
+                {isEditing && (
+                  <div className="text-[10px] text-slate-400 font-bold text-center mt-12 pt-6 border-t border-dashed border-slate-100 select-none">
+                    💡 Tips Editor: Geser handle di pojok kanan bawah gambar untuk me-resize. Drag &amp; drop gambar langsung ke kertas untuk menyisipkan.
+                  </div>
+                )}
+
+              </div>
+
+              </div>
+              </div>
+</div>
