@@ -890,8 +890,8 @@ export default function App() {
           setImageCaption(capEl ? capEl.textContent || '' : '');
         }
       } else {
+        // Clicked on non-image media (e.g., video) - deselect but keep current tab
         setSelectedImageElement(null);
-        setActiveRibbonTab('Home');
       }
 
       // Check for button action inside media toolbar
@@ -955,7 +955,7 @@ export default function App() {
           if (window.confirm('Hapus media ini dari dokumen?')) {
             mediaWrapper.remove();
             setSelectedImageElement(null);
-            setActiveRibbonTab('Home');
+            // Keep current ribbon tab after deletion
           }
         }
 
@@ -967,8 +967,8 @@ export default function App() {
         }
       }
     } else {
+      // Clicked on empty area of editor - just deselect media but keep current ribbon tab
       setSelectedImageElement(null);
-      setActiveRibbonTab('Home');
     }
   };
 
