@@ -1,6 +1,0 @@
-{
-  "name": "Warehouse Knowledge Base",
-  "description": "A highly professional and fully-featured knowledge base for warehouse operations, logistics, standard operating procedures (SOPs), safety compliance, and training documentation. Built with a powerful Notion/Confluence style interface, a Word/Docs rich editor with drag-and-drop, autosave, revisions, and integrated Gemini AI features.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
