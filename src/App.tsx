@@ -1679,26 +1679,60 @@ export default function App() {
                         </>
                       )}
 
-                      {activeRibbonTab === 'Insert' && (
-                        <>
-                          <div className="flex items-center gap-2 border-r border-slate-200 pr-4 shrink-0">
-                             <button onClick={triggerImageUpload} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><ImageIcon className="h-5 w-5 mb-1 text-blue-500"/><span className="text-[10px]">Pictures</span></button>
-                             <button onClick={insertTableHTML} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><TableIcon className="h-5 w-5 mb-1 text-indigo-500"/><span className="text-[10px]">Table</span></button>
-                             <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Shapes className="h-5 w-5 mb-1 text-emerald-500"/><span className="text-[10px]">Shapes</span></button>
-                             <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Smile className="h-5 w-5 mb-1 text-yellow-500"/><span className="text-[10px]">Icons</span></button>
-                          </div>
-                          <div className="flex items-center gap-2 border-r border-slate-200 pr-4 shrink-0">
-                             <button onClick={insertLink} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><LinkIcon className="h-5 w-5 mb-1 text-blue-500"/><span className="text-[10px]">Link</span></button>
-                             <button onClick={() => executeCommand('insertHorizontalRule')} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Minus className="h-5 w-5 mb-1 text-slate-500"/><span className="text-[10px]">Divider</span></button>
-                             <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><QrCode className="h-5 w-5 mb-1 text-slate-600"/><span className="text-[10px]">QR Code</span></button>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                             <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Type className="h-5 w-5 mb-1 text-slate-500"/><span className="text-[10px]">Text Box</span></button>
-                             <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><PenTool className="h-5 w-5 mb-1 text-slate-500"/><span className="text-[10px]">Signature</span></button>
-                             <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><FileText className="h-5 w-5 mb-1 text-slate-500"/><span className="text-[10px]">Page Break</span></button>
-                          </div>
-                        </>
-                      )}
+{activeRibbonTab === 'Insert' && (
+  <>
+    <div className="flex items-center gap-2 border-r border-slate-200 pr-4 shrink-0">
+      <button onClick={triggerImageUpload} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
+        <ImageIcon className="h-5 w-5 mb-1 text-blue-500" />
+        <span className="text-[10px]">Pictures</span>
+      </button>
+      <button onClick={insertTableHTML} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
+        <TableIcon className="h-5 w-5 mb-1 text-indigo-500" />
+        <span className="text-[10px]">Table</span>
+      </button>
+      <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
+        <Shapes className="h-5 w-5 mb-1 text-emerald-500" />
+        <span className="text-[10px]">Shapes</span>
+      </button>
+      <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
+        <Smile className="h-5 w-5 mb-1 text-yellow-500" />
+        <span className="text-[10px]">Icons</span>
+      </button>
+      <button onClick={triggerYoutubeEmbed} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
+        <Youtube className="h-5 w-5 mb-1 text-red-600" />
+        <span className="text-[10px]">YouTube</span>
+      </button>
+    </div>
+    <div className="flex items-center gap-2 border-r border-slate-200 pr-4 shrink-0">
+      <button onClick={insertLink} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
+        <LinkIcon className="h-5 w-5 mb-1 text-blue-500" />
+        <span className="text-[10px]">Link</span>
+      </button>
+      <button onClick={() => executeCommand('insertHorizontalRule')} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
+        <Minus className="h-5 w-5 mb-1 text-slate-500" />
+        <span className="text-[10px]">Divider</span>
+      </button>
+      <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
+        <QrCode className="h-5 w-5 mb-1 text-slate-600" />
+        <span className="text-[10px]">QR Code</span>
+      </button>
+    </div>
+    <div className="flex items-center gap-2 shrink-0">
+      <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
+        <Type className="h-5 w-5 mb-1 text-slate-500" />
+        <span className="text-[10px]">Text Box</span>
+      </button>
+      <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
+        <PenTool className="h-5 w-5 mb-1 text-slate-500" />
+        <span className="text-[10px]">Signature</span>
+      </button>
+      <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
+        <FileText className="h-5 w-5 mb-1 text-slate-500" />
+        <span className="text-[10px]">Page Break</span>
+      </button>
+    </div>
+  </>
+)}
 
                       {activeRibbonTab === 'Design' && (
                         <div className="flex items-center gap-4 shrink-0">
