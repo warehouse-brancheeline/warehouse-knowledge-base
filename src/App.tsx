@@ -891,7 +891,7 @@ export default function App() {
         }
       } else {
         setSelectedImageElement(null);
-        setActiveRibbonTab('text');
+        setActiveRibbonTab('Home');
       }
 
       // Check for button action inside media toolbar
@@ -955,7 +955,7 @@ export default function App() {
           if (window.confirm('Hapus media ini dari dokumen?')) {
             mediaWrapper.remove();
             setSelectedImageElement(null);
-            setActiveRibbonTab('text');
+            setActiveRibbonTab('Home');
           }
         }
 
@@ -968,7 +968,7 @@ export default function App() {
       }
     } else {
       setSelectedImageElement(null);
-      setActiveRibbonTab('text');
+      setActiveRibbonTab('Home');
     }
   };
 
