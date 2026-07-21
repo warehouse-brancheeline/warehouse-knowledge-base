@@ -142,12 +142,10 @@
 /* Video wrapper */
 .editor-content .video-container {
   @apply relative w-full aspect-video rounded overflow-hidden bg-black;
-  pointer-events: none;
 }
 
 .editor-content .video-container iframe {
   @apply absolute top-0 left-0 w-full h-full border-0;
-  pointer-events: none;
 }
 
 /* Document Page layout (Google Docs / Word style) */
