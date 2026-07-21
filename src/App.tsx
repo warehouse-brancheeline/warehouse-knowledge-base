@@ -1899,71 +1899,71 @@ export default function App() {
                     <p className="text-slate-500 font-medium">Tidak ada dokumen ditemukan</p>
                   </div>
                 ) : (
-                  filteredArticles.map(art => {
-                    const colors = CATEGORY_COLORS[art.category];
-                    return (
-                      <div key={art.id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col transition-all hover:shadow-md group">
-                        
-                        {/* Top Banner Area */}
-                        <div className="bg-[#243c5a] h-32 relative flex items-center justify-center">
-                          <span className={`absolute top-3 left-3 text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${colors.bg} ${colors.text}`}>
-                            {art.category}
-                          </span>
-                          <div className="text-4xl opacity-50 group-hover:scale-110 group-hover:opacity-100 transition-all">
-                            {colors.icon}
-                          </div>
-                          {art.thumbnail && (
-                            <img src={art.thumbnail} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-overlay" />
-                          )}
-                        </div>
-
-                        {/* Content Area */}
-                        <div className="p-5 flex-1 flex flex-col">
-                          <h4 
-                            onClick={() => setSelectedArticle(art)}
-                            className="text-base font-bold text-[#243c5a] mb-2 cursor-pointer hover:text-indigo-600 transition-colors line-clamp-2"
-                          >
-                            {art.title}
-                          </h4>
-                          <p className="text-xs text-slate-500 mb-4 flex-1 line-clamp-2">
-                            {art.desc || 'Tidak ada deskripsi tersedia.'}
-                          </p>
-                          
-                          <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium pt-4 border-t border-slate-100">
-                            <div className="flex items-center space-x-1">
-                              <Clock className="w-3.5 h-3.5" />
-                              <span>{art.date}</span>
-                            </div>
-                            <div className="flex items-center space-x-1 text-orange-500">
-                              <Edit2 className="w-3.5 h-3.5" />
-                              <span>{art.author}</span>
-                            </div>
-                          </div>
-                          
-                          {/* Admin Actions */}
-                          {isAdmin && (
-                            <div className="flex items-center space-x-2 mt-4 pt-3">
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); setSelectedArticle(art); setIsEditing(true); }}
-                                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white text-[11px] font-bold py-1.5 px-3 rounded-lg flex items-center justify-center space-x-1.5 transition-colors"
-                              >
-                                <Edit2 className="w-3 h-3" />
-                                <span>Edit</span>
-                              </button>
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); handleDeleteArticle(art.id); }}
-                                className="flex-1 bg-rose-500 hover:bg-rose-600 text-white text-[11px] font-bold py-1.5 px-3 rounded-lg flex items-center justify-center space-x-1.5 transition-colors"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                                <span>Hapus</span>
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
+               filteredArticles.map(art => {
+                 const colors = CATEGORY_COLORS[art.category];
+                 return (
+                   <div 
+                     key={art.id} 
+                     onClick={() => setSelectedArticle(art)}
+                     className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col transition-all hover:shadow-md hover:-translate-y-1 cursor-pointer group"
+                   >
+                     {/* Top Banner Area */}
+                     <div className="bg-[#243c5a] h-32 relative flex items-center justify-center">
+                       <span className={`absolute top-3 left-3 text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${colors.bg} ${colors.text}`}>
+                         {art.category}
+                       </span>
+                       <div className="text-4xl opacity-50 group-hover:scale-110 group-hover:opacity-100 transition-all">
+                         {colors.icon}
+                       </div>
+                       {art.thumbnail && (
+                         <img src={art.thumbnail} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-overlay pointer-events-none" />
+                       )}
+                     </div>
+                     
+                     {/* Content Area */}
+                     <div className="p-5 flex-1 flex flex-col">
+                       {/* Hapus onClick dari h4, ganti dengan group-hover agar warna berubah saat kartu di-hover */}
+                       <h4 className="text-base font-bold text-[#243c5a] mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">
+                         {art.title}
+                       </h4>
+                       <p className="text-xs text-slate-500 mb-4 flex-1 line-clamp-2">
+                         {art.desc || 'Tidak ada deskripsi tersedia.'}
+                       </p>
+                       <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium pt-4 border-t border-slate-100">
+                         <div className="flex items-center space-x-1">
+                           <Clock className="w-3.5 h-3.5" />
+                           <span>{art.date}</span>
+                         </div>
+                         <div className="flex items-center space-x-1 text-orange-500">
+                           <Edit2 className="w-3.5 h-3.5" />
+                           <span>{art.author}</span>
+                         </div>
+                       </div>
+                       
+                       {/* Admin Actions - e.stopPropagation() tetap dipertahankan agar tidak memicu klik kartu */}
+                       {isAdmin && (
+                         <div className="flex items-center space-x-2 mt-4 pt-3 border-t border-slate-100">
+                           <button 
+                             onClick={(e) => { e.stopPropagation(); setSelectedArticle(art); setIsEditing(true); }}
+                             className="flex-1 bg-orange-500 hover:bg-orange-600 text-white text-[11px] font-bold py-1.5 px-3 rounded-lg flex items-center justify-center space-x-1.5 transition-colors"
+                           >
+                             <Edit2 className="w-3 h-3" />
+                             <span>Edit</span>
+                           </button>
+                           <button 
+                             onClick={(e) => { e.stopPropagation(); handleDeleteArticle(art.id); }}
+                             className="flex-1 bg-rose-500 hover:bg-rose-600 text-white text-[11px] font-bold py-1.5 px-3 rounded-lg flex items-center justify-center space-x-1.5 transition-colors"
+                           >
+                             <Trash2 className="w-3 h-3" />
+                             <span>Hapus</span>
+                           </button>
+                         </div>
+                       )}
+                     </div>
+                   </div>
+                 );
+               })
+             )}
               </div>
               
             </div>
