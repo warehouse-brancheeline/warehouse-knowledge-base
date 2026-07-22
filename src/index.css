@@ -66,13 +66,139 @@
   background-color: var(--bronze-dim);
 }
 
-/* Lists styling */
+/* Lists styling - Microsoft Word-like multi-level */
 .editor-content ul {
-  @apply list-disc list-inside pl-5 mb-4 space-y-1;
+  @apply list-none pl-0 mb-4 space-y-1;
 }
 
 .editor-content ol {
-  @apply list-decimal list-inside pl-5 mb-4 space-y-1;
+  @apply list-none pl-0 mb-4 space-y-1;
+}
+
+/* Unordered list bullets with proper nesting */
+.editor-content ul > li::before {
+  content: '•';
+  display: inline-block;
+  width: 1em;
+  margin-left: -1em;
+  color: #334155;
+}
+
+/* Level 2 bullets */
+.editor-content ul ul > li::before {
+  content: '○';
+}
+
+/* Level 3 bullets */
+.editor-content ul ul ul > li::before {
+  content: '▪';
+}
+
+/* Level 4+ repeats pattern */
+.editor-content ul ul ul ul > li::before {
+  content: '•';
+}
+
+.editor-content ul ul ul ul ul > li::before {
+  content: '○';
+}
+
+.editor-content ul ul ul ul ul ul > li::before {
+  content: '▪';
+}
+
+/* Ordered list numbering with CSS counters */
+.editor-content ol {
+  counter-reset: item;
+}
+
+.editor-content ol > li {
+  position: relative;
+}
+
+.editor-content ol > li::before {
+  content: counter(item) '. ';
+  counter-increment: item;
+  display: inline-block;
+  width: 1.5em;
+  margin-left: -1.5em;
+  color: #334155;
+}
+
+/* Nested ordered lists - letter style (a., b., c.) */
+.editor-content ol ol {
+  counter-reset: subitem;
+}
+
+.editor-content ol ol > li::before {
+  content: counter(subitem, lower-alpha) '. ';
+  counter-increment: subitem;
+}
+
+/* Third level - roman numerals (i., ii., iii.) */
+.editor-content ol ol ol {
+  counter-reset: subsubitem;
+}
+
+.editor-content ol ol ol > li::before {
+  content: counter(subsubitem, lower-roman) '. ';
+  counter-increment: subsubitem;
+}
+
+/* Fourth level - decimal again (1., 2., 3.) */
+.editor-content ol ol ol ol {
+  counter-reset: item4;
+}
+
+.editor-content ol ol ol ol > li::before {
+  content: counter(item4) '. ';
+  counter-increment: item4;
+}
+
+/* Fifth level - letter again (a., b., c.) */
+.editor-content ol ol ol ol ol {
+  counter-reset: item5;
+}
+
+.editor-content ol ol ol ol ol > li::before {
+  content: counter(item5, lower-alpha) '. ';
+  counter-increment: item5;
+}
+
+/* Sixth level - roman again (i., ii., iii.) */
+.editor-content ol ol ol ol ol ol {
+  counter-reset: item6;
+}
+
+.editor-content ol ol ol ol ol ol > li::before {
+  content: counter(item6, lower-roman) '. ';
+  counter-increment: item6;
+}
+
+/* Indentation for nested lists - consistent 24px per level */
+.editor-content ul > li,
+.editor-content ol > li {
+  padding-left: 1.5em;
+}
+
+.editor-content ul ul,
+.editor-content ol ol {
+  padding-left: 24px;
+}
+
+.editor-content ul ul ul,
+.editor-content ol ol ol {
+  padding-left: 48px;
+}
+
+.editor-content ul ul ul ul,
+.editor-content ol ol ol ol {
+  padding-left: 72px;
+}
+
+.editor-content ul ul ul ul ul,
+.editor-content ol ol ol ol ol {
+  padding-left: 96px;
 }
 
 .editor-content li {
