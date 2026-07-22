@@ -1004,6 +1004,12 @@ export default function App() {
 
     const handleMouseUp = () => {
       if (resizingMedia) {
+        // Restore pointer-events on iframe
+        const iframe = resizingMedia.element.querySelector('iframe');
+        if (iframe) {
+          iframe.style.pointerEvents = 'auto';
+        }
+        
         setResizingMedia(null);
         if (editorRef.current) {
           const html = editorRef.current.innerHTML;
@@ -1014,6 +1020,12 @@ export default function App() {
     };
 
     if (resizingMedia) {
+      // Disable pointer-events on iframe during resize to prevent it from capturing mouse events
+      const iframe = resizingMedia.element.querySelector('iframe');
+      if (iframe) {
+        iframe.style.pointerEvents = 'none';
+      }
+      
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
     }
