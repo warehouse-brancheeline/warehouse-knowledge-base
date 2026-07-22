@@ -339,6 +339,11 @@ export default function App() {
   const [showGridlines, setShowGridlines] = useState(false);
   const [watermarkText, setWatermarkText] = useState('');
   const [showWatermarkModal, setShowWatermarkModal] = useState(false);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [cropData, setCropData] = useState<{ img: HTMLImageElement; wrapper: HTMLElement } | null>(null);
+  const [cropRect, setCropRect] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const [isCropping, setIsCropping] = useState(false);
+  const [cropStart, setCropStart] = useState({ x: 0, y: 0 });
   const [pageBorderEnabled, setPageBorderEnabled] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState<'default' | 'blue' | 'green' | 'red'>('default');
   const [themeColors, setThemeColors] = useState({ primary: '#1e40af', secondary: '#3b82f6' });
@@ -675,6 +680,24 @@ export default function App() {
       img.setAttribute('data-rotate', currentRotate.toString());
       img.setAttribute('data-scalex', currentScaleX.toString());
       img.setAttribute('data-scaley', currentScaleY.toString());
+
+      // Handle rotation without cropping - adjust wrapper for 90° and 270° rotations
+      if (updates.rotate !== undefined) {
+        const isRotated90or270 = currentRotate === 90 || currentRotate === 270;
+        if (isRotated90or270) {
+          // For 90° and 270° rotations, the image dimensions swap visually
+          // Use naturalWidth/naturalHeight to set proper container size
+          selectedImageElement.style.minWidth = `${img.naturalHeight}px`;
+          selectedImageElement.style.minHeight = `${img.naturalWidth}px`;
+          selectedImageElement.style.width = `${img.naturalHeight}px`;
+          img.style.maxWidth = 'none';
+        } else {
+          selectedImageElement.style.minWidth = '';
+          selectedImageElement.style.minHeight = '';
+          selectedImageElement.style.width = '';
+          img.style.maxWidth = '100%';
+        }
+      }
 
       // Filter attributes
       let b = updates.brightness !== undefined ? updates.brightness : imageBrightness;
@@ -1541,7 +1564,126 @@ export default function App() {
       showNotification('Pilih gambar terlebih dahulu!', 'warning');
       return;
     }
-    showNotification('Fitur Crop: Gunakan editor gambar eksternal untuk hasil terbaik.', 'info');
+    const img = selectedImageElement.querySelector('img');
+    if (!img) {
+      showNotification('Gambar tidak ditemukan!', 'error');
+      return;
+    }
+    
+    // Initialize crop modal with the current image
+    setCropData({ img, wrapper: selectedImageElement });
+    const rect = img.getBoundingClientRect();
+    const wrapperRect = selectedImageElement.getBoundingClientRect();
+    
+    // Set initial crop rectangle to full image size
+    setCropRect({
+      x: 0,
+      y: 0,
+      width: img.naturalWidth,
+      height: img.naturalHeight
+    });
+    
+    setShowCropModal(true);
+    showNotification('Mode Crop aktif. Klik dan tarik untuk memilih area yang akan dipotong.', 'info');
+  };
+
+  const handleCropMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cropData) return;
+    
+    const canvas = e.currentTarget;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = cropData.img.naturalWidth / rect.width;
+    const scaleY = cropData.img.naturalHeight / rect.height;
+    
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+    
+    setCropStart({ x, y });
+    setIsCropping(true);
+    setCropRect({ x, y, width: 0, height: 0 });
+  };
+
+  const handleCropMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isCropping || !cropData) return;
+    
+    const canvas = e.currentTarget;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = cropData.img.naturalWidth / rect.width;
+    const scaleY = cropData.img.naturalHeight / rect.height;
+    
+    const currentX = (e.clientX - rect.left) * scaleX;
+    const currentY = (e.clientY - rect.top) * scaleY;
+    
+    const newRect = {
+      x: Math.min(cropStart.x, currentX),
+      y: Math.min(cropStart.y, currentY),
+      width: Math.abs(currentX - cropStart.x),
+      height: Math.abs(currentY - cropStart.y)
+    };
+    
+    setCropRect(newRect);
+  };
+
+  const handleCropMouseUp = () => {
+    setIsCropping(false);
+  };
+
+  const handleCropApply = () => {
+    if (!cropData || cropRect.width === 0 || cropRect.height === 0) {
+      showNotification('Pilih area crop terlebih dahulu!', 'warning');
+      return;
+    }
+    
+    try {
+      // Create a canvas to perform the crop
+      const canvas = document.createElement('canvas');
+      canvas.width = cropRect.width;
+      canvas.height = cropRect.height;
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        showNotification('Gagal membuat context canvas!', 'error');
+        return;
+      }
+      
+      // Draw the cropped portion
+      ctx.drawImage(
+        cropData.img,
+        cropRect.x,
+        cropRect.y,
+        cropRect.width,
+        cropRect.height,
+        0,
+        0,
+        cropRect.width,
+        cropRect.height
+      );
+      
+      // Get the cropped image as data URL
+      const croppedDataUrl = canvas.toDataURL('image/png');
+      
+      // Replace the original image source with the cropped version
+      cropData.img.src = croppedDataUrl;
+      cropData.img.setAttribute('data-rotate', '0');
+      cropData.img.style.transform = 'none';
+      cropData.wrapper.style.minWidth = '';
+      cropData.wrapper.style.minHeight = '';
+      
+      setImageRotate(0);
+      
+      setShowCropModal(false);
+      setCropData(null);
+      showNotification('Gambar berhasil dipotong!', 'success');
+    } catch (err) {
+      showNotification('Gagal memotong gambar!', 'error');
+      console.error('Crop error:', err);
+    }
+  };
+
+  const handleCropCancel = () => {
+    setShowCropModal(false);
+    setCropData(null);
+    setIsCropping(false);
   };
 
   const handleRotateImage = () => {
@@ -2626,6 +2768,82 @@ export default function App() {
               >
                 Sisipkan Video
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- POPUP WINDOW: Crop Image Modal --- */}
+      {showCropModal && cropData && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4" id="cropPopup">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+            <h3 className="text-lg font-extrabold text-slate-900 flex items-center mb-4">
+              <Crop className="h-5 w-5 text-indigo-600 mr-2" /> Potong Gambar (Crop)
+            </h3>
+            <p className="text-xs text-slate-400 mb-4">
+              Klik dan tarik pada gambar untuk memilih area yang akan dipotong.
+            </p>
+            <div 
+              className="relative border border-slate-200 rounded-lg overflow-hidden cursor-crosshair bg-slate-50"
+              style={{ maxHeight: '50vh', display: 'inline-block' }}
+              onMouseDown={handleCropMouseDown}
+              onMouseMove={handleCropMouseMove}
+              onMouseUp={handleCropMouseUp}
+              onMouseLeave={handleCropMouseUp}
+            >
+              <img 
+                src={cropData.img.src} 
+                alt="Crop preview" 
+                className="max-h-[50vh] w-auto block select-none pointer-events-none"
+                draggable={false}
+              />
+              {/* Crop overlay */}
+              {cropRect.width > 0 && cropRect.height > 0 && (
+                <>
+                  {/* Dark overlay outside crop area */}
+                  <div 
+                    className="absolute inset-0 bg-black/50 pointer-events-none"
+                    style={{
+                      clipPath: `polygon(
+                        0% 0%, 100% 0%, 100% 100%, 0% 100%,
+                        ${(cropRect.x / cropData.img.naturalWidth) * 100}% ${(cropRect.y / cropData.img.naturalHeight) * 100}%,
+                        ${((cropRect.x + cropRect.width) / cropData.img.naturalWidth) * 100}% ${(cropRect.y / cropData.img.naturalHeight) * 100}%,
+                        ${((cropRect.x + cropRect.width) / cropData.img.naturalWidth) * 100}% ${((cropRect.y + cropRect.height) / cropData.img.naturalHeight) * 100}%,
+                        ${(cropRect.x / cropData.img.naturalWidth) * 100}% ${((cropRect.y + cropRect.height) / cropData.img.naturalHeight) * 100}%
+                      )`
+                    }}
+                  />
+                  {/* Crop rectangle border */}
+                  <div 
+                    className="absolute border-2 border-dashed border-white pointer-events-none"
+                    style={{
+                      left: `${(cropRect.x / cropData.img.naturalWidth) * 100}%`,
+                      top: `${(cropRect.y / cropData.img.naturalHeight) * 100}%`,
+                      width: `${(cropRect.width / cropData.img.naturalWidth) * 100}%`,
+                      height: `${(cropRect.height / cropData.img.naturalHeight) * 100}%`
+                    }}
+                  />
+                </>
+              )}
+            </div>
+            <div className="flex items-center justify-between mt-4">
+              <div className="text-xs text-slate-500">
+                Ukuran: {Math.round(cropRect.width)} x {Math.round(cropRect.height)} px
+              </div>
+              <div className="flex items-center space-x-2.5">
+                <button
+                  onClick={handleCropCancel}
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold py-2.5 px-4 rounded-xl transition-all"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleCropApply}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2.5 px-5 rounded-xl transition-all shadow-md shadow-indigo-100"
+                >
+                  Terapkan Crop
+                </button>
+              </div>
             </div>
           </div>
         </div>
