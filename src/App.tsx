@@ -326,6 +326,18 @@ export default function App() {
   // Indent state (in pt)
   const [leftIndentPt, setLeftIndentPt] = useState(0);
   const [rightIndentPt, setRightIndentPt] = useState(0);
+  const [firstLineIndentPt, setFirstLineIndentPt] = useState(0);
+  
+  // Paragraph indents storage (per paragraph)
+  const [paragraphIndents, setParagraphIndents] = useState<Map<number, { left: number; right: number; firstLine: number }>>(new Map());
+  const [currentParagraphId, setCurrentParagraphId] = useState<number>(0);
+  
+  // Tab stops storage (per paragraph, in pixels from left margin)
+  const [tabStops, setTabStops] = useState<Map<number, number[]>>(new Map());
+  
+  // Ruler marker drag state
+  const [isDraggingMarker, setIsDraggingMarker] = useState<'firstLine' | 'left' | 'right' | null>(null);
+  const [dragOffset, setDragOffset] = useState(0);
 
   // Paragraph Spacing state (in pt, 0-1584 like Word)
   const [spacingBefore, setSpacingBefore] = useState(0);
@@ -1079,9 +1091,60 @@ export default function App() {
   };
 
   // --- Indent Handlers ---
+  const getParagraphId = (paragraph: HTMLElement): number => {
+    let id = paragraph.getAttribute('data-para-id');
+    if (!id) {
+      id = Date.now().toString();
+      paragraph.setAttribute('data-para-id', id);
+    }
+    return parseInt(id, 10);
+  };
+
+  const updateParagraphIndents = (paragraph: HTMLElement, left: number, right: number, firstLine: number) => {
+    const paraId = getParagraphId(paragraph);
+    const newIndents = new Map(paragraphIndents);
+    newIndents.set(paraId, { left, right, firstLine });
+    setParagraphIndents(newIndents);
+    
+    // Apply styles
+    paragraph.style.paddingLeft = `${left}px`;
+    paragraph.style.paddingRight = `${right}px`;
+    paragraph.style.textIndent = `${firstLine}px`;
+  };
+
+  const getCurrentParagraphIndents = (): { left: number; right: number; firstLine: number } => {
+    if (!editorRef.current) return { left: 0, right: 0, firstLine: 0 };
+    
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return { left: 0, right: 0, firstLine: 0 };
+    
+    const range = selection.getRangeAt(0);
+    let paragraph = range.startContainer.nodeType === 3 
+      ? (range.startContainer as Text).parentElement 
+      : (range.startContainer as HTMLElement);
+    
+    while (paragraph && !['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(paragraph.tagName)) {
+      paragraph = paragraph.parentElement;
+    }
+    
+    if (!paragraph) return { left: 0, right: 0, firstLine: 0 };
+    
+    const paraId = getParagraphId(paragraph);
+    const stored = paragraphIndents.get(paraId);
+    if (stored) return stored;
+    
+    // Parse from inline styles if not in state
+    const left = parseFloat(paragraph.style.paddingLeft) || 0;
+    const right = parseFloat(paragraph.style.paddingRight) || 0;
+    const firstLine = parseFloat(paragraph.style.textIndent) || 0;
+    
+    return { left, right, firstLine };
+  };
+
   const handleIndentIncrease = () => {
-    const newIndent = Math.min(leftIndentPt + 36, 720); // Max 720pt (like Word ~25cm)
-    setLeftIndentPt(newIndent);
+    const current = getCurrentParagraphIndents();
+    const newLeft = Math.min(current.left + 36, 720);
+    
     if (editorRef.current) {
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
@@ -1090,13 +1153,12 @@ export default function App() {
           ? (range.startContainer as Text).parentElement 
           : (range.startContainer as HTMLElement);
         
-        // Find closest block element
         while (paragraph && !['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(paragraph.tagName)) {
           paragraph = paragraph.parentElement;
         }
         
         if (paragraph) {
-          paragraph.style.paddingLeft = `${newIndent}px`;
+          updateParagraphIndents(paragraph, newLeft, current.right, current.firstLine);
           pushToHistory(editorRef.current.innerHTML);
         }
       }
@@ -1104,8 +1166,9 @@ export default function App() {
   };
 
   const handleIndentDecrease = () => {
-    const newIndent = Math.max(leftIndentPt - 36, 0);
-    setLeftIndentPt(newIndent);
+    const current = getCurrentParagraphIndents();
+    const newLeft = Math.max(current.left - 36, 0);
+    
     if (editorRef.current) {
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
@@ -1119,7 +1182,7 @@ export default function App() {
         }
         
         if (paragraph) {
-          paragraph.style.paddingLeft = `${newIndent}px`;
+          updateParagraphIndents(paragraph, newLeft, current.right, current.firstLine);
           pushToHistory(editorRef.current.innerHTML);
         }
       }
@@ -1181,34 +1244,37 @@ export default function App() {
     if (document.queryCommandState('underline')) formats.push('underline');
     if (document.queryCommandState('strikeThrough')) formats.push('strikethrough');
     setActiveFormats(formats);
+    
+    // Update current paragraph indents when selection changes
+    if (editorRef.current && isEditing) {
+      const currentIndents = getCurrentParagraphIndents();
+      setLeftIndentPt(currentIndents.left);
+      setRightIndentPt(currentIndents.right);
+      setFirstLineIndentPt(currentIndents.firstLine);
+    }
   };
 
-  // --- HTML Media Toolbar Generator helper ---
-  const wrapWithMediaHTML = (innerContent: string, width: string = '50%', isVideo: boolean = false) => {
-    return `<span class="media-wrapper layout-block align-center" style="width: ${width};" contenteditable="false" data-media-type="${isVideo ? 'video' : 'image'}">
-      <div class="media-toolbar" contenteditable="false">
-        <button type="button" class="layout-btn" data-action="layout-block" title="Posisikan Tengah (Baris Sendiri)">▬</button>
-        <button type="button" class="layout-btn" data-action="layout-float-left" title="Samping Kiri (Teks Kanan)">⬅</button>
-        <button type="button" class="layout-btn" data-action="layout-float-right" title="Samping Kanan (Teks Kiri)">➡</button>
-        <div class="sep"></div>
-        <button type="button" class="size-btn" data-action="w25">25%</button>
-        <button type="button" class="size-btn" data-action="w50">50%</button>
-        <button type="button" class="size-btn" data-action="w75">75%</button>
-        <button type="button" class="size-btn" data-action="w100">100%</button>
-        <div class="sep"></div>
-        ${!isVideo ? `<button type="button" data-action="rotate" title="Putar Gambar 90°">↻</button>` : ''}
-        <button type="button" data-action="caption" title="Beri Keterangan Gambar">💬</button>
-        <div class="sep"></div>
-        <button type="button" class="danger" data-action="delete" title="Hapus Media">🗑</button>
-      </div>
-      ${innerContent}
-      <span class="resize-handle"></span>
-    </span>&nbsp;`;
-  };
-
-  // --- Handle Media Interactions (Delegation) ---
+  // --- Handle Editor Click to track current paragraph ---
   const handleEditorClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
+    
+    // Find current paragraph and update its indent state
+    let paragraph = target.nodeType === 3 
+      ? (target as Text).parentElement 
+      : target;
+    
+    while (paragraph && !['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(paragraph.tagName)) {
+      paragraph = paragraph.parentElement;
+    }
+    
+    if (paragraph) {
+      const paraId = getParagraphId(paragraph);
+      setCurrentParagraphId(paraId);
+      const indents = getCurrentParagraphIndents();
+      setLeftIndentPt(indents.left);
+      setRightIndentPt(indents.right);
+      setFirstLineIndentPt(indents.firstLine);
+    }
     
     // Check if clicked inside or on a media wrapper
     const mediaWrapper = target.closest('.media-wrapper') as HTMLElement;
