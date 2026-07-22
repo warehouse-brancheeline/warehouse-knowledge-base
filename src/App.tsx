@@ -319,50 +319,66 @@ export default function App() {
   const [imageObjectFit, setImageObjectFit] = useState('cover');
   const [imageCaption, setImageCaption] = useState('');
 
-  // Line Spacing state (in pt, 0-1584 like Word)
-  const [lineSpacingPt, setLineSpacingPt] = useState(12);
-  const [showLineSpacingDropdown, setShowLineSpacingDropdown] = useState(false);
+  // --- Design Tab: document-level styling ---
+  const [docAccentColor, setDocAccentColor] = useState<string>('#a8823d');
+  const [docFont, setDocFont] = useState<string>('inherit');
+  const [watermarkText, setWatermarkText] = useState<string>('');
+  const [pageBorderOn, setPageBorderOn] = useState(false);
+  const [docDarkMode, setDocDarkMode] = useState(false);
 
-  // Indent state (in pt)
-  const [leftIndentPt, setLeftIndentPt] = useState(0);
-  const [rightIndentPt, setRightIndentPt] = useState(0);
-  const [firstLineIndentPt, setFirstLineIndentPt] = useState(0);
-  
-  // Paragraph indents storage (per paragraph)
-  const [paragraphIndents, setParagraphIndents] = useState<Map<number, { left: number; right: number; firstLine: number }>>(new Map());
-  const [currentParagraphId, setCurrentParagraphId] = useState<number>(0);
-  
-  // Tab stops storage (per paragraph, in pixels from left margin)
-  const [tabStops, setTabStops] = useState<Map<number, number[]>>(new Map());
-  
-  // Ruler marker drag state
-  const [isDraggingMarker, setIsDraggingMarker] = useState<'firstLine' | 'left' | 'right' | null>(null);
-  const [dragOffset, setDragOffset] = useState(0);
+  const DOC_THEMES: Record<string, { accent: string; font: string }> = {
+    'Bronze (Default)': { accent: '#a8823d', font: 'inherit' },
+    'Slate Formal': { accent: '#334155', font: 'inherit' },
+    'Forest': { accent: '#166534', font: 'inherit' },
+    'Sunset': { accent: '#c2410c', font: 'inherit' },
+    'Elegant Serif': { accent: '#a8823d', font: "'Fraunces', Georgia, serif" },
+  };
 
-  // Paragraph Spacing state (in pt, 0-1584 like Word)
-  const [spacingBefore, setSpacingBefore] = useState(0);
-  const [spacingAfter, setSpacingAfter] = useState(0);
-  const [showSpacingDropdown, setShowSpacingDropdown] = useState(false);
-
-  // Design & View states
-  const [darkMode, setDarkMode] = useState(false);
-  const [showNavPane, setShowNavPane] = useState(true);
-  const [showRuler, setShowRuler] = useState(true);
+  // --- View Tab: zoom / fullscreen / nav pane / ruler / gridlines ---
+  const [docZoom, setDocZoom] = useState(100);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showNavPane, setShowNavPane] = useState(false);
+  const [showRuler, setShowRuler] = useState(false);
   const [showGridlines, setShowGridlines] = useState(false);
-  const [watermarkText, setWatermarkText] = useState('');
-  const [showWatermarkModal, setShowWatermarkModal] = useState(false);
-  const [showCropModal, setShowCropModal] = useState(false);
-  const [cropData, setCropData] = useState<{ img: HTMLImageElement; wrapper: HTMLElement } | null>(null);
-  const [cropRect, setCropRect] = useState({ x: 0, y: 0, width: 0, height: 0 });
-  const [isCropping, setIsCropping] = useState(false);
-  const [cropStart, setCropStart] = useState({ x: 0, y: 0 });
-  const [pageBorderEnabled, setPageBorderEnabled] = useState(false);
-  const [selectedTheme, setSelectedTheme] = useState<'default' | 'blue' | 'green' | 'red'>('default');
-  const [themeColors, setThemeColors] = useState({ primary: '#1e40af', secondary: '#3b82f6' });
-  const [selectedFont, setSelectedFont] = useState('Arial');
-  const [showThemeDropdown, setShowThemeDropdown] = useState(false);
-  const [showColorDropdown, setShowColorDropdown] = useState(false);
-  const [showFontDropdown, setShowFontDropdown] = useState(false);
+  const [navHeadings, setNavHeadings] = useState<{ id: string; text: string; level: number }[]>([]);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen?.();
+      setIsFullscreen(false);
+    }
+  };
+
+  useEffect(() => {
+    const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, []);
+
+  const refreshNavHeadings = () => {
+    if (!editorRef.current) return;
+    const headingEls = editorRef.current.querySelectorAll('h1, h2, h3');
+    const list: { id: string; text: string; level: number }[] = [];
+    headingEls.forEach((el, i) => {
+      const htmlEl = el as HTMLElement;
+      if (!htmlEl.id) htmlEl.id = `heading-${i}-${Date.now()}`;
+      list.push({ id: htmlEl.id, text: htmlEl.textContent || '(Tanpa judul)', level: parseInt(htmlEl.tagName.substring(1), 10) });
+    });
+    setNavHeadings(list);
+  };
+
+  const toggleNavPane = () => {
+    if (!showNavPane) refreshNavHeadings();
+    setShowNavPane(!showNavPane);
+  };
+
+  const scrollToHeading = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
 
   // --- Initialize App ---
   useEffect(() => {
@@ -371,12 +387,14 @@ export default function App() {
     if (saved) {
       const parsed = JSON.parse(saved);
       setArticles(parsed);
-      // Don't auto-select first article - let user choose from "Semua" tab
+      if (parsed.length > 0) {
+        setSelectedArticle(parsed[0]);
+      }
     } else {
       // Seed initial data
       localStorage.setItem('wh_articles', JSON.stringify(SEED_ARTICLES));
       setArticles(SEED_ARTICLES);
-      // Don't auto-select first article - let user choose from "Semua" tab
+      setSelectedArticle(SEED_ARTICLES[0]);
     }
 
     // Load admin login status from sessionStorage
@@ -691,24 +709,6 @@ export default function App() {
       img.setAttribute('data-scalex', currentScaleX.toString());
       img.setAttribute('data-scaley', currentScaleY.toString());
 
-      // Handle rotation without cropping - adjust wrapper for 90° and 270° rotations
-      if (updates.rotate !== undefined) {
-        const isRotated90or270 = currentRotate === 90 || currentRotate === 270;
-        if (isRotated90or270) {
-          // For 90° and 270° rotations, the image dimensions swap visually
-          // Use naturalWidth/naturalHeight to set proper container size
-          selectedImageElement.style.minWidth = `${img.naturalHeight}px`;
-          selectedImageElement.style.minHeight = `${img.naturalWidth}px`;
-          selectedImageElement.style.width = `${img.naturalHeight}px`;
-          img.style.maxWidth = 'none';
-        } else {
-          selectedImageElement.style.minWidth = '';
-          selectedImageElement.style.minHeight = '';
-          selectedImageElement.style.width = '';
-          img.style.maxWidth = '100%';
-        }
-      }
-
       // Filter attributes
       let b = updates.brightness !== undefined ? updates.brightness : imageBrightness;
       let c = updates.contrast !== undefined ? updates.contrast : imageContrast;
@@ -806,434 +806,273 @@ export default function App() {
     }
   };
 
-  // --- List Level Management (Microsoft Word-like behavior) ---
-  
-  // Get bullet symbol based on level for unordered list
-  const getBulletSymbol = (level: number): string => {
-    const pattern = ['•', '○', '▪'];
-    return pattern[(level - 1) % pattern.length];
+  // --- Word-style List Behavior (Tab/Shift+Tab/Enter/Backspace) ---
+  const syncEditorAfterListMutation = () => {
+    if (!editorRef.current) return;
+    const html = editorRef.current.innerHTML;
+    setEditorContent(html);
+    pushToHistory(html);
   };
 
-  // Get numbering style based on level for ordered list
-  const getNumberingStyle = (level: number): string => {
-    const patterns = ['decimal', 'lower-alpha', 'lower-roman', 'decimal', 'lower-alpha', 'lower-roman'];
-    return patterns[(level - 1) % patterns.length];
-  };
-
-  // Get current list item and its level
-  const getCurrentListItem = (): { li: HTMLLIElement | null; level: number; isOrdered: boolean } => {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) {
-      return { li: null, level: 1, isOrdered: false };
-    }
-    
-    const node = selection.anchorNode;
-    let li: HTMLElement | null = node?.nodeType === 3 ? (node as Text).parentElement : (node as HTMLElement);
-    
-    while (li && li.tagName !== 'LI') {
-      li = li.parentElement;
-    }
-    
-    if (!li) {
-      return { li: null, level: 1, isOrdered: false };
-    }
-    
-    const liEl = li as HTMLLIElement;
-    
-    // Check if inside ul or ol
-    let parentList = liEl.parentElement;
-    let isOrdered = parentList?.tagName === 'OL';
-    let level = 1;
-    
-    // Count nesting levels
-    while (parentList && (parentList.tagName === 'UL' || parentList.tagName === 'OL')) {
-      const grandParent = parentList.parentElement;
-      if (grandParent?.tagName === 'LI') {
-        level++;
-        parentList = grandParent.parentElement;
+  // Level 1 = item directly in the outermost list. Each further nested ul/ol adds one level.
+  const getListLevel = (li: HTMLElement): number => {
+    let level = 0;
+    let listEl: HTMLElement | null = li.parentElement;
+    while (listEl && (listEl.tagName === 'UL' || listEl.tagName === 'OL')) {
+      level++;
+      const holder = listEl.parentElement;
+      if (holder && holder.tagName === 'LI') {
+        listEl = holder.parentElement;
       } else {
         break;
       }
     }
-    
-    return { li: liEl, level, isOrdered };
+    return level;
   };
 
-  // Demote list item (increase indent level) - Tab
-  const demoteListItem = () => {
-    const { li, level, isOrdered } = getCurrentListItem();
-    if (!li) return false;
-    
-    // Max level 5
-    if (level >= 5) return true;
-    
-    const prevLi = li.previousElementSibling as HTMLLIElement;
-    if (!prevLi || prevLi.tagName !== 'LI') {
-      // No previous sibling at same level, can't demote
-      return true;
-    }
-    
-    // Create or find the nested list in previous li
-    let nestedList = prevLi.querySelector('ul, ol');
+  // Text belonging directly to this <li>, excluding any nested sub-list's own text.
+  const getListItemOwnText = (li: HTMLElement): string => {
+    let text = '';
+    li.childNodes.forEach((node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        text += node.textContent || '';
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        const tag = (node as HTMLElement).tagName;
+        if (tag !== 'UL' && tag !== 'OL') text += (node as HTMLElement).textContent || '';
+      }
+    });
+    return text;
+  };
+
+  const isCaretAtStartOfListItem = (li: HTMLElement, sel: Selection): boolean => {
+    if (!sel.isCollapsed) return true; // a selected range within the line counts as "whole line selected"
+    const range = sel.getRangeAt(0);
+
+    const walker = document.createTreeWalker(li, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        let p: Node | null = node.parentNode;
+        while (p && p !== li) {
+          if (p.nodeType === Node.ELEMENT_NODE && ((p as HTMLElement).tagName === 'UL' || (p as HTMLElement).tagName === 'OL')) {
+            return NodeFilter.FILTER_REJECT;
+          }
+          p = p.parentNode;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      },
+    });
+    const firstTextNode = walker.nextNode();
+
+    if (!firstTextNode) return true; // empty item — caret is trivially "at start"
+    if (range.startContainer === firstTextNode && range.startOffset === 0) return true;
+    if (range.startContainer === li && range.startOffset === 0) return true;
+    return false;
+  };
+
+  // TAB: nest current <li> as a child of the previous sibling <li> (one level deeper)
+  const demoteListItem = (li: HTMLLIElement, sel: Selection) => {
+    const prevLi = li.previousElementSibling;
+    if (!prevLi || prevLi.tagName !== 'LI') return; // first item in the list can't be demoted
+    const parentList = li.parentElement as HTMLElement;
+    const listTag = parentList.tagName;
+    const savedRange = sel.rangeCount > 0 ? sel.getRangeAt(0).cloneRange() : null;
+
+    let nestedList = Array.from(prevLi.children).find((c) => c.tagName === listTag) as HTMLElement | undefined;
     if (!nestedList) {
-      nestedList = document.createElement(isOrdered ? 'ol' : 'ul');
+      nestedList = document.createElement(listTag);
       prevLi.appendChild(nestedList);
     }
-    
-    // Move current li to the nested list
-    nestedList.appendChild(li);
-    
-    // Apply proper styling based on new level
-    applyListStyling(li, level + 1, isOrdered);
-    
-    saveEditorState();
-    return true;
+    nestedList.appendChild(li); // re-parents li, its text nodes keep their identity
+
+    if (savedRange && sel) {
+      sel.removeAllRanges();
+      sel.addRange(savedRange);
+    }
   };
 
-  // Promote list item (decrease indent level) - Shift+Tab or Backspace at start
-  const promoteListItem = (liElement?: HTMLLIElement): boolean => {
-    const { li, level, isOrdered } = getCurrentListItem();
-    const targetLi = liElement || li;
-    
-    if (!targetLi) return false;
-    if (level <= 1) {
-      // At root level, convert to paragraph
-      convertToParagraph(targetLi);
-      return true;
+  // SHIFT+TAB: move current <li> out to become a sibling right after its former parent item
+  const promoteListItem = (li: HTMLLIElement, sel: Selection) => {
+    const parentList = li.parentElement as HTMLElement;
+    if (!parentList) return;
+    const grandLi = parentList.parentElement;
+    if (!grandLi || grandLi.tagName !== 'LI') return; // already level 1 — nothing to promote to
+    const outerList = grandLi.parentElement as HTMLElement;
+    const savedRange = sel.rangeCount > 0 ? sel.getRangeAt(0).cloneRange() : null;
+
+    if (grandLi.nextSibling) outerList.insertBefore(li, grandLi.nextSibling);
+    else outerList.appendChild(li);
+
+    if (parentList.children.length === 0) parentList.remove();
+
+    if (savedRange && sel) {
+      sel.removeAllRanges();
+      sel.addRange(savedRange);
     }
-    
-    // Find parent list
-    const parentList = targetLi.parentElement;
-    if (!parentList || (parentList.tagName !== 'UL' && parentList.tagName !== 'OL')) {
-      return false;
-    }
-    
-    // Find the grandparent list item
-    const grandParentLi = parentList.parentElement?.closest('li') as HTMLLIElement;
-    if (!grandParentLi) {
-      return false;
-    }
-    
-    // Move targetLi after the parent list
-    parentList.after(targetLi);
-    
-    // Clean up empty lists
-    if (parentList.children.length === 0) {
-      parentList.remove();
-    }
-    
-    // Apply proper styling based on new level
-    applyListStyling(targetLi, level - 1, isOrdered);
-    
-    saveEditorState();
-    return true;
   };
 
-  // Convert list item to paragraph
-  const convertToParagraph = (liElement: HTMLLIElement) => {
-    const text = liElement.textContent || '';
+  // Removes `li` from its list, splitting the list into "before" / "after" parts as needed,
+  // and inserts `replacementEl` in its place. If `extraAfterEl` is given (e.g. a nested
+  // sub-list that hung off this item), it's re-inserted right after `replacementEl`.
+  const splitListAroundItem = (li: HTMLLIElement, replacementEl: HTMLElement, extraAfterEl?: HTMLElement) => {
+    const list = li.parentElement as HTMLElement;
+    const container = list.parentElement as HTMLElement;
+    const listTag = list.tagName;
+
+    const before: Element[] = [];
+    const after: Element[] = [];
+    let passedLi = false;
+    Array.from(list.children).forEach((child) => {
+      if (child === li) { passedLi = true; return; }
+      if (!passedLi) before.push(child); else after.push(child);
+    });
+
+    if (before.length > 0) {
+      after.forEach((el) => list.removeChild(el));
+      list.removeChild(li);
+      container.insertBefore(replacementEl, list.nextSibling);
+    } else {
+      container.insertBefore(replacementEl, list);
+      list.removeChild(li);
+      if (after.length === 0) list.remove();
+    }
+
+    let afterAnchor: Node = replacementEl;
+    if (extraAfterEl) {
+      container.insertBefore(extraAfterEl, afterAnchor.nextSibling);
+      afterAnchor = extraAfterEl;
+    }
+
+    if (after.length > 0) {
+      if (before.length > 0) {
+        const afterList = document.createElement(listTag);
+        after.forEach((el) => afterList.appendChild(el));
+        container.insertBefore(afterList, afterAnchor.nextSibling);
+      } else {
+        container.insertBefore(list, afterAnchor.nextSibling);
+      }
+    }
+  };
+
+  // ENTER on an empty list item: leave the list entirely, become a normal paragraph
+  const exitListToParagraph = (li: HTMLLIElement, sel: Selection) => {
     const p = document.createElement('p');
-    p.textContent = text;
-    liElement.replaceWith(p);
-    
-    // Move cursor to start of new paragraph
+    p.innerHTML = '<br>';
+    splitListAroundItem(li, p);
     const range = document.createRange();
-    const sel = window.getSelection();
     range.setStart(p, 0);
     range.collapse(true);
-    sel?.removeAllRanges();
-    sel?.addRange(range);
-    
-    saveEditorState();
+    sel.removeAllRanges();
+    sel.addRange(range);
   };
 
-  // Apply styling to list item based on level
-  const applyListStyling = (li: HTMLLIElement, level: number, isOrdered: boolean) => {
-    if (isOrdered) {
-      // For ordered lists, we rely on CSS list-style-type
-      // The nesting handles the level automatically
+  // BACKSPACE at the very start of a level-1 item: drop the bullet, keep the text as a paragraph
+  const unwrapListItemToParagraph = (li: HTMLLIElement, sel: Selection) => {
+    const savedRange = sel.rangeCount > 0 ? sel.getRangeAt(0).cloneRange() : null;
+    const p = document.createElement('p');
+    const nestedSubList = Array.from(li.children).find((c) => c.tagName === 'UL' || c.tagName === 'OL') as HTMLElement | undefined;
+
+    Array.from(li.childNodes).forEach((node) => {
+      if (node === nestedSubList) return;
+      p.appendChild(node); // moved (not cloned) — keeps the same node identity for caret restore
+    });
+    if (!p.hasChildNodes()) p.innerHTML = '<br>';
+
+    splitListAroundItem(li, p, nestedSubList);
+
+    if (savedRange && sel) {
+      sel.removeAllRanges();
+      sel.addRange(savedRange);
     } else {
-      // For unordered lists, we need custom bullets
-      // This is handled by CSS based on nesting level
+      const range = document.createRange();
+      range.selectNodeContents(p);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
     }
   };
 
-  // Handle Enter key in list
-  const handleEnterInList = (): boolean => {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return false;
-    
-    const { li, level } = getCurrentListItem();
-    if (!li) return false;
-    
-    // Check if list item is empty
-    const textContent = li.textContent?.trim() || '';
-    if (textContent === '') {
-      // Empty list item - exit list
-      convertToParagraph(li);
-      return true;
-    }
-    
-    // Check if cursor is at end of line
-    const range = selection.getRangeAt(0);
-    const isAtEnd = range.endOffset === (range.endContainer as Text)?.length || 
-                    range.endContainer === li && range.endOffset === li.childNodes.length;
-    
-    if (isAtEnd && textContent !== '') {
-      // Normal enter - create new list item at same level
-      // Default browser behavior handles this
-      return false;
-    }
-    
-    return false;
-  };
-
-  // Handle Backspace at start of list item
-  const handleBackspaceInList = (): boolean => {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return false;
-    
-    const { li, level } = getCurrentListItem();
-    if (!li) return false;
-    
-    const range = selection.getRangeAt(0);
-    
-    // Check if cursor is at the very start of the list item
-    const isAtStart = range.startOffset === 0 && 
-                      (range.startContainer === li || 
-                       (range.startContainer.nodeType === 3 && 
-                        (range.startContainer as Text).parentNode === li));
-    
-    if (isAtStart) {
-      if (level > 1) {
-        // Promote one level
-        promoteListItem(li);
-        return true;
-      } else {
-        // At root level - convert to paragraph
-        convertToParagraph(li);
-        return true;
+  const handleEditorKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === ' ') {
+      // Markdown-style autoformat: "- "/"* " -> bullet list, "1. " -> numbered list (Word/Docs style)
+      const block = getBlockElementForSelection();
+      const sel = window.getSelection();
+      if (block && block !== editorRef.current && !block.closest('li') && sel && sel.isCollapsed && sel.rangeCount > 0) {
+        const range = sel.getRangeAt(0);
+        const preRange = document.createRange();
+        preRange.selectNodeContents(block);
+        preRange.setEnd(range.startContainer, range.startOffset);
+        const textBefore = preRange.toString();
+        if (/^[-*]$/.test(textBefore)) {
+          e.preventDefault();
+          block.textContent = '';
+          document.execCommand('insertUnorderedList');
+          syncEditorAfterListMutation();
+          return;
+        }
+        if (/^\d+\.$/.test(textBefore)) {
+          e.preventDefault();
+          block.textContent = '';
+          document.execCommand('insertOrderedList');
+          syncEditorAfterListMutation();
+          return;
+        }
       }
     }
-    
-    return false;
-  };
 
-  // Main keydown handler for list behavior
-  const handleListKeyDown = (e: React.KeyboardEvent<HTMLDivElement>): void => {
-    if (!isEditing) return;
-    
-    const { li } = getCurrentListItem();
-    if (!li) return; // Not in a list item
-    
+    if (e.key !== 'Tab' && e.key !== 'Enter' && e.key !== 'Backspace') return;
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || !editorRef.current) return;
+    const anchorNode = sel.anchorNode;
+    if (!anchorNode || !editorRef.current.contains(anchorNode)) return;
+
+    const anchorEl = (anchorNode.nodeType === Node.ELEMENT_NODE ? anchorNode as Element : anchorNode.parentElement);
+    const li = anchorEl?.closest('li') as HTMLLIElement | null;
+
     if (e.key === 'Tab') {
-      e.preventDefault();
-      if (e.shiftKey) {
-        // Shift+Tab = Promote
-        promoteListItem();
-      } else {
-        // Tab = Demote
-        demoteListItem();
+      if (li) {
+        const atStart = isCaretAtStartOfListItem(li, sel);
+        if (atStart) {
+          e.preventDefault();
+          if (e.shiftKey) promoteListItem(li, sel); else demoteListItem(li, sel);
+          syncEditorAfterListMutation();
+          return;
+        }
+        if (e.shiftKey) {
+          // Shift+Tab works anywhere inside the item, not just at line start
+          e.preventDefault();
+          promoteListItem(li, sel);
+          syncEditorAfterListMutation();
+          return;
+        }
       }
-    } else if (e.key === 'Enter') {
-      // Check if current list item is empty - exit list on Enter
-      const textContent = li.textContent?.trim() || '';
-      if (textContent === '') {
+      if (!e.shiftKey) {
+        // Not in a list (or mid-text without shift): insert plain indentation, don't touch list structure
         e.preventDefault();
-        convertToParagraph(li);
+        document.execCommand('insertHTML', false, '&nbsp;&nbsp;&nbsp;&nbsp;');
+        syncEditorAfterListMutation();
       }
-      // Otherwise let default behavior create new list item
-    } else if (e.key === 'Backspace') {
-      const handled = handleBackspaceInList();
-      if (handled) {
+      return;
+    }
+
+    if (e.key === 'Enter') {
+      if (li && getListItemOwnText(li).trim() === '' && !li.querySelector('ul, ol')) {
         e.preventDefault();
+        exitListToParagraph(li, sel);
+        syncEditorAfterListMutation();
       }
+      // Non-empty item: let the browser's native Enter create the next sibling <li>
+      return;
     }
-  };
 
-  // --- Line Spacing Handler ---
-  const handleLineSpacing = (pt: number) => {
-    setLineSpacingPt(pt);
-    // Convert pt to line-height (1pt ≈ 1.33px, but we use direct pixel value for consistency)
-    const lineHeight = `${pt}px`;
-    if (editorRef.current) {
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        const selectedText = range.toString();
-        if (selectedText) {
-          // Wrap selected text in a span with line-height
-          const span = document.createElement('span');
-          span.style.lineHeight = lineHeight;
-          try {
-            range.surroundContents(span);
-          } catch (e) {
-            // If surrounding fails, use execCommand for paragraph
-            document.execCommand('formatBlock', false, 'p');
-            const p = document.querySelector('p[style*="line-height"]') || document.querySelector('p');
-            if (p) {
-              (p as HTMLElement).style.lineHeight = lineHeight;
-            }
-          }
-        } else {
-          // Apply to current paragraph
-          document.execCommand('formatBlock', false, 'p');
-          const focusNode = selection.focusNode;
-          const paragraph = focusNode?.nodeType === 3 ? focusNode.parentElement : focusNode as HTMLElement;
-          if (paragraph) {
-            paragraph.style.lineHeight = lineHeight;
-          }
-        }
-        pushToHistory(editorRef.current.innerHTML);
+    if (e.key === 'Backspace') {
+      if (li && sel.isCollapsed && isCaretAtStartOfListItem(li, sel)) {
+        e.preventDefault();
+        const level = getListLevel(li);
+        if (level > 1) promoteListItem(li, sel);
+        else unwrapListItemToParagraph(li, sel);
+        syncEditorAfterListMutation();
       }
+      return;
     }
-    setShowLineSpacingDropdown(false);
-  };
-
-  // --- Indent Handlers ---
-  const getParagraphId = (paragraph: HTMLElement): number => {
-    let id = paragraph.getAttribute('data-para-id');
-    if (!id) {
-      id = Date.now().toString();
-      paragraph.setAttribute('data-para-id', id);
-    }
-    return parseInt(id, 10);
-  };
-
-  const updateParagraphIndents = (paragraph: HTMLElement, left: number, right: number, firstLine: number) => {
-    const paraId = getParagraphId(paragraph);
-    const newIndents = new Map(paragraphIndents);
-    newIndents.set(paraId, { left, right, firstLine });
-    setParagraphIndents(newIndents);
-    
-    // Apply styles
-    paragraph.style.paddingLeft = `${left}px`;
-    paragraph.style.paddingRight = `${right}px`;
-    paragraph.style.textIndent = `${firstLine}px`;
-  };
-
-  const getCurrentParagraphIndents = (): { left: number; right: number; firstLine: number } => {
-    if (!editorRef.current) return { left: 0, right: 0, firstLine: 0 };
-    
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return { left: 0, right: 0, firstLine: 0 };
-    
-    const range = selection.getRangeAt(0);
-    let paragraph = range.startContainer.nodeType === 3 
-      ? (range.startContainer as Text).parentElement 
-      : (range.startContainer as HTMLElement);
-    
-    while (paragraph && !['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(paragraph.tagName)) {
-      paragraph = paragraph.parentElement;
-    }
-    
-    if (!paragraph) return { left: 0, right: 0, firstLine: 0 };
-    
-    const paraId = getParagraphId(paragraph);
-    const stored = paragraphIndents.get(paraId);
-    if (stored) return stored;
-    
-    // Parse from inline styles if not in state
-    const left = parseFloat(paragraph.style.paddingLeft) || 0;
-    const right = parseFloat(paragraph.style.paddingRight) || 0;
-    const firstLine = parseFloat(paragraph.style.textIndent) || 0;
-    
-    return { left, right, firstLine };
-  };
-
-  const handleIndentIncrease = () => {
-    const current = getCurrentParagraphIndents();
-    const newLeft = Math.min(current.left + 36, 720);
-    
-    if (editorRef.current) {
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        let paragraph = range.startContainer.nodeType === 3 
-          ? (range.startContainer as Text).parentElement 
-          : (range.startContainer as HTMLElement);
-        
-        while (paragraph && !['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(paragraph.tagName)) {
-          paragraph = paragraph.parentElement;
-        }
-        
-        if (paragraph) {
-          updateParagraphIndents(paragraph, newLeft, current.right, current.firstLine);
-          pushToHistory(editorRef.current.innerHTML);
-        }
-      }
-    }
-  };
-
-  const handleIndentDecrease = () => {
-    const current = getCurrentParagraphIndents();
-    const newLeft = Math.max(current.left - 36, 0);
-    
-    if (editorRef.current) {
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        let paragraph = range.startContainer.nodeType === 3 
-          ? (range.startContainer as Text).parentElement 
-          : (range.startContainer as HTMLElement);
-        
-        while (paragraph && !['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(paragraph.tagName)) {
-          paragraph = paragraph.parentElement;
-        }
-        
-        if (paragraph) {
-          updateParagraphIndents(paragraph, newLeft, current.right, current.firstLine);
-          pushToHistory(editorRef.current.innerHTML);
-        }
-      }
-    }
-  };
-
-  // --- Paragraph Spacing Handlers ---
-  const handleSpacingBefore = (pt: number) => {
-    setSpacingBefore(pt);
-    if (editorRef.current) {
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        let paragraph = range.startContainer.nodeType === 3 
-          ? (range.startContainer as Text).parentElement 
-          : (range.startContainer as HTMLElement);
-        
-        while (paragraph && !['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(paragraph.tagName)) {
-          paragraph = paragraph.parentElement;
-        }
-        
-        if (paragraph) {
-          paragraph.style.marginTop = `${pt}px`;
-          pushToHistory(editorRef.current.innerHTML);
-        }
-      }
-    }
-    setShowSpacingDropdown(false);
-  };
-
-  const handleSpacingAfter = (pt: number) => {
-    setSpacingAfter(pt);
-    if (editorRef.current) {
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        let paragraph = range.startContainer.nodeType === 3 
-          ? (range.startContainer as Text).parentElement 
-          : (range.startContainer as HTMLElement);
-        
-        while (paragraph && !['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(paragraph.tagName)) {
-          paragraph = paragraph.parentElement;
-        }
-        
-        if (paragraph) {
-          paragraph.style.marginBottom = `${pt}px`;
-          pushToHistory(editorRef.current.innerHTML);
-        }
-      }
-    }
-    setShowSpacingDropdown(false);
   };
 
   // Check interactive format states
@@ -1244,37 +1083,34 @@ export default function App() {
     if (document.queryCommandState('underline')) formats.push('underline');
     if (document.queryCommandState('strikeThrough')) formats.push('strikethrough');
     setActiveFormats(formats);
-    
-    // Update current paragraph indents when selection changes
-    if (editorRef.current && isEditing) {
-      const currentIndents = getCurrentParagraphIndents();
-      setLeftIndentPt(currentIndents.left);
-      setRightIndentPt(currentIndents.right);
-      setFirstLineIndentPt(currentIndents.firstLine);
-    }
   };
 
-  // --- Handle Editor Click to track current paragraph ---
+  // --- HTML Media Toolbar Generator helper ---
+  const wrapWithMediaHTML = (innerContent: string, width: string = '50%', isVideo: boolean = false) => {
+    return `<span class="media-wrapper layout-block align-center" style="width: ${width};" contenteditable="false" data-media-type="${isVideo ? 'video' : 'image'}">
+      <div class="media-toolbar" contenteditable="false">
+        <button type="button" class="layout-btn" data-action="layout-block" title="Posisikan Tengah (Baris Sendiri)">▬</button>
+        <button type="button" class="layout-btn" data-action="layout-float-left" title="Samping Kiri (Teks Kanan)">⬅</button>
+        <button type="button" class="layout-btn" data-action="layout-float-right" title="Samping Kanan (Teks Kiri)">➡</button>
+        <div class="sep"></div>
+        <button type="button" class="size-btn" data-action="w25">25%</button>
+        <button type="button" class="size-btn" data-action="w50">50%</button>
+        <button type="button" class="size-btn" data-action="w75">75%</button>
+        <button type="button" class="size-btn" data-action="w100">100%</button>
+        <div class="sep"></div>
+        ${!isVideo ? `<button type="button" data-action="rotate" title="Putar Gambar 90°">↻</button>` : ''}
+        <button type="button" data-action="caption" title="Beri Keterangan Gambar">💬</button>
+        <div class="sep"></div>
+        <button type="button" class="danger" data-action="delete" title="Hapus Media">🗑</button>
+      </div>
+      ${innerContent}
+      <span class="resize-handle"></span>
+    </span>&nbsp;`;
+  };
+
+  // --- Handle Media Interactions (Delegation) ---
   const handleEditorClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
-    
-    // Find current paragraph and update its indent state
-    let paragraph = target.nodeType === 3 
-      ? (target as Text).parentElement 
-      : target;
-    
-    while (paragraph && !['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(paragraph.tagName)) {
-      paragraph = paragraph.parentElement;
-    }
-    
-    if (paragraph) {
-      const paraId = getParagraphId(paragraph);
-      setCurrentParagraphId(paraId);
-      const indents = getCurrentParagraphIndents();
-      setLeftIndentPt(indents.left);
-      setRightIndentPt(indents.right);
-      setFirstLineIndentPt(indents.firstLine);
-    }
     
     // Check if clicked inside or on a media wrapper
     const mediaWrapper = target.closest('.media-wrapper') as HTMLElement;
@@ -1688,17 +1524,6 @@ export default function App() {
     }
   };
 
-  // --- Cut Handler ---
-  const handleCut = () => {
-    document.execCommand('cut');
-  };
-
-  // --- Copy Handler ---
-  const handleCopy = () => {
-    document.execCommand('copy');
-    showNotification('Konten berhasil disalin!', 'success');
-  };
-
   // --- Interactive Checklist Clicking in Reading/Viewer Mode ---
   const handleViewerClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
@@ -1726,7 +1551,228 @@ export default function App() {
     }
   };
 
-  // --- Copy Shareable Link ---
+  // --- Ribbon Paste / Cut / Copy (Home tab buttons) ---
+  const ribbonCopy = async () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) {
+      showNotification('Pilih teks terlebih dahulu untuk menyalin.', 'warning');
+      return;
+    }
+    try {
+      document.execCommand('copy');
+      showNotification('Teks disalin ke papan klip.', 'success');
+    } catch {
+      showNotification('Gagal menyalin. Coba gunakan Ctrl+C.', 'error');
+    }
+  };
+
+  const ribbonCut = () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) {
+      showNotification('Pilih teks terlebih dahulu untuk memotong.', 'warning');
+      return;
+    }
+    try {
+      document.execCommand('cut');
+      if (editorRef.current) {
+        const html = editorRef.current.innerHTML;
+        setEditorContent(html);
+        pushToHistory(html);
+      }
+      showNotification('Teks dipotong ke papan klip.', 'success');
+    } catch {
+      showNotification('Gagal memotong. Coba gunakan Ctrl+X.', 'error');
+    }
+  };
+
+  const ribbonPaste = async () => {
+    editorRef.current?.focus();
+    try {
+      if (navigator.clipboard && (navigator.clipboard as any).read) {
+        const clipItems = await (navigator.clipboard as any).read();
+        for (const item of clipItems) {
+          const imgType = item.types.find((t: string) => t.startsWith('image/'));
+          if (imgType) {
+            const blob = await item.getType(imgType);
+            const file = new File([blob], 'pasted-image.png', { type: imgType });
+            handleImageFile(file);
+            return;
+          }
+        }
+      }
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        executeCommand('insertText', text);
+        showNotification('Konten ditempel dari papan klip.', 'success');
+      }
+    } catch {
+      // Clipboard permission denied by browser — fall back to native paste shortcut
+      showNotification('Izin papan klip ditolak browser. Gunakan Ctrl+V.', 'warning');
+    }
+  };
+
+  // --- Word-style Indent (moves the block's left margin, not execCommand's blockquote hack) ---
+  const INDENT_STEP_PX = 40; // ~0.5 inch per Word indent level
+
+  const getBlockElementForSelection = (): HTMLElement | null => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || !editorRef.current) return null;
+    let node: Node | null = sel.getRangeAt(0).startContainer;
+    while (node && node !== editorRef.current) {
+      if (node.nodeType === 1) {
+        const el = node as HTMLElement;
+        const display = window.getComputedStyle(el).display;
+        if (['block', 'list-item'].includes(display) || /^(P|DIV|H1|H2|H3|H4|LI|BLOCKQUOTE)$/.test(el.tagName)) {
+          return el;
+        }
+      }
+      node = node.parentNode;
+    }
+    return editorRef.current;
+  };
+
+  const applyWordIndent = (direction: 'increase' | 'decrease') => {
+    const block = getBlockElementForSelection();
+    if (!block) return;
+    const current = parseInt(block.style.marginLeft || '0', 10) || 0;
+    const next = direction === 'increase'
+      ? current + INDENT_STEP_PX
+      : Math.max(0, current - INDENT_STEP_PX);
+    block.style.marginLeft = next > 0 ? `${next}px` : '';
+    if (editorRef.current) {
+      const html = editorRef.current.innerHTML;
+      setEditorContent(html);
+      pushToHistory(html);
+    }
+  };
+
+  // --- Word-style Paragraph Spacing (space before / after, in points) ---
+  const applyParagraphSpacing = (before: number, after: number) => {
+    const block = getBlockElementForSelection();
+    if (!block) return;
+    block.style.marginTop = `${before}pt`;
+    block.style.marginBottom = `${after}pt`;
+    if (editorRef.current) {
+      const html = editorRef.current.innerHTML;
+      setEditorContent(html);
+      pushToHistory(html);
+    }
+  };
+
+  const applyLineSpacing = (value: string) => {
+    const block = getBlockElementForSelection();
+    if (!block) return;
+    block.style.lineHeight = value;
+    if (editorRef.current) {
+      const html = editorRef.current.innerHTML;
+      setEditorContent(html);
+      pushToHistory(html);
+    }
+  };
+
+
+  // --- Insert Tab: Shapes ---
+  const SHAPE_SVGS: Record<string, string> = {
+    rectangle: '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80" viewBox="0 0 120 80"><rect x="4" y="4" width="112" height="72" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/></svg>',
+    circle: '<svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" viewBox="0 0 90 90"><circle cx="45" cy="45" r="41" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/></svg>',
+    triangle: '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="90" viewBox="0 0 100 90"><polygon points="50,4 96,86 4,86" fill="#fef9c3" stroke="#ca8a04" stroke-width="2"/></svg>',
+    line: '<svg xmlns="http://www.w3.org/2000/svg" width="140" height="20" viewBox="0 0 140 20"><line x1="4" y1="10" x2="136" y2="10" stroke="#334155" stroke-width="3"/></svg>',
+    arrow: '<svg xmlns="http://www.w3.org/2000/svg" width="140" height="40" viewBox="0 0 140 40"><line x1="4" y1="20" x2="120" y2="20" stroke="#334155" stroke-width="3"/><polygon points="120,8 140,20 120,32" fill="#334155"/></svg>',
+  };
+  const insertShape = (shape: keyof typeof SHAPE_SVGS) => {
+    editorRef.current?.focus();
+    executeCommand('insertHTML', `<span contenteditable="false" style="display:inline-block;vertical-align:middle;margin:2px;">${SHAPE_SVGS[shape]}</span>&nbsp;`);
+    setOpenImagePopover(null);
+  };
+
+  // --- Insert Tab: Icons (emoji) ---
+  const ICON_EMOJIS = ['📌','✅','⚠️','🔥','💡','📦','🚧','🔧','📋','⭐','📍','🛠️','🚀','📊','🕒','✔️'];
+  const insertIconEmoji = (emoji: string) => {
+    editorRef.current?.focus();
+    executeCommand('insertText', emoji);
+    setOpenImagePopover(null);
+  };
+
+  // --- Insert Tab: QR Code ---
+  const insertQRCode = () => {
+    const content = prompt('Masukkan teks atau URL untuk QR Code:', 'https://');
+    if (!content) return;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(content)}`;
+    editorRef.current?.focus();
+    const html = wrapWithMediaHTML(`<img src="${qrUrl}" alt="QR Code" class="rounded-md" style="width:100%;height:auto;" />`, '20%', true);
+    executeCommand('insertHTML', html);
+  };
+
+  // --- Insert Tab: Text Box ---
+  const insertTextBoxBlock = () => {
+    editorRef.current?.focus();
+    const inner = `<div contenteditable="true" class="p-4 border border-dashed border-slate-300 rounded bg-white text-sm text-slate-700" style="min-height:80px;">Klik di sini untuk menulis teks...</div>`;
+    const html = wrapWithMediaHTML(inner, '40%', true);
+    executeCommand('insertHTML', html);
+  };
+
+  // --- Insert Tab: Page Break (visual marker + print pagination) ---
+  const insertPageBreak = () => {
+    editorRef.current?.focus();
+    executeCommand('insertHTML', `<div class="page-break-marker" contenteditable="false">Page Break</div><p><br></p>`);
+  };
+
+  // --- Insert Tab: Signature (canvas drawing modal) ---
+  const [showSignatureModal, setShowSignatureModal] = useState(false);
+  const signatureCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const isDrawingSignature = useRef(false);
+
+  const getCanvasPoint = (canvas: HTMLCanvasElement, e: React.MouseEvent | React.TouchEvent) => {
+    const rect = canvas.getBoundingClientRect();
+    const point = 'touches' in e ? e.touches[0] : (e as React.MouseEvent);
+    return { x: point.clientX - rect.left, y: point.clientY - rect.top };
+  };
+
+  const handleSignatureStart = (e: React.MouseEvent | React.TouchEvent) => {
+    const canvas = signatureCanvasRef.current;
+    if (!canvas) return;
+    isDrawingSignature.current = true;
+    const ctx = canvas.getContext('2d');
+    const { x, y } = getCanvasPoint(canvas, e);
+    ctx?.beginPath();
+    ctx?.moveTo(x, y);
+  };
+
+  const handleSignatureMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDrawingSignature.current) return;
+    const canvas = signatureCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const { x, y } = getCanvasPoint(canvas, e);
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  };
+
+  const handleSignatureEnd = () => {
+    isDrawingSignature.current = false;
+  };
+
+  const clearSignatureCanvas = () => {
+    const canvas = signatureCanvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+  };
+
+  const insertSignatureFromCanvas = () => {
+    const canvas = signatureCanvasRef.current;
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL('image/png');
+    editorRef.current?.focus();
+    const html = wrapWithMediaHTML(`<img src="${dataUrl}" alt="Signature" style="width:100%;height:auto;" />`, '25%', true);
+    executeCommand('insertHTML', html);
+    setShowSignatureModal(false);
+    clearSignatureCanvas();
+  };
+
   const handleCopyLink = () => {
     if (!selectedArticle) return;
     const url = window.location.href;
@@ -1747,274 +1793,6 @@ export default function App() {
   // --- Document printing trigger ---
   const handlePrint = () => {
     window.print();
-  };
-
-  // --- Design Tab Handlers ---
-  const handleThemeChange = (theme: 'default' | 'blue' | 'green' | 'red') => {
-    setSelectedTheme(theme);
-    const themeColorMap = {
-      default: { primary: '#1e40af', secondary: '#3b82f6' },
-      blue: { primary: '#1e3a8a', secondary: '#3b82f6' },
-      green: { primary: '#166534', secondary: '#22c55e' },
-      red: { primary: '#991b1b', secondary: '#ef4444' },
-    };
-    setThemeColors(themeColorMap[theme]);
-    setShowThemeDropdown(false);
-    showNotification(`Tema ${theme} diterapkan!`, 'success');
-  };
-
-  const handleFontChange = (font: string) => {
-    setSelectedFont(font);
-    if (editorRef.current) {
-      editorRef.current.style.fontFamily = font;
-    }
-    setShowFontDropdown(false);
-    showNotification(`Font ${font} diterapkan!`, 'success');
-  };
-
-  const handleWatermarkApply = () => {
-    showNotification(`Watermark "${watermarkText}" diterapkan!`, 'success');
-    setShowWatermarkModal(false);
-  };
-
-  const handleColorChange = (color: string) => {
-    setThemeColors({ ...themeColors, primary: color });
-    setShowColorDropdown(false);
-    showNotification(`Warna ${color} diterapkan!`, 'success');
-  };
-
-  const insertIcon = () => {
-    const iconHtml = `<span style="font-size: 24px; display: inline-block; margin: 5px;">⭐</span>`;
-    editorRef.current?.focus();
-    executeCommand('insertHTML', iconHtml);
-    showNotification('Icon ditambahkan!', 'success');
-  };
-
-  const insertQRCode = () => {
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.href)}`;
-    const qrHtml = `<img src="${qrUrl}" alt="QR Code" style="width: 150px; height: 150px;" />`;
-    editorRef.current?.focus();
-    executeCommand('insertHTML', qrHtml);
-    showNotification('QR Code ditambahkan!', 'success');
-  };
-
-  const insertTextBox = () => {
-    const textBoxHtml = `<div contenteditable="true" style="border: 1px solid #ccc; padding: 10px; min-width: 200px; min-height: 50px; background: #f9fafb;">Ketik teks di sini...</div>`;
-    editorRef.current?.focus();
-    executeCommand('insertHTML', textBoxHtml);
-    showNotification('Text Box ditambahkan!', 'success');
-  };
-
-  const insertSignature = () => {
-    const signatureHtml = `<div style="border-top: 2px solid #000; width: 200px; padding-top: 5px; margin-top: 20px;"><span style="font-family: 'Comic Sans MS', cursive; font-size: 18px;">Tanda Tangan Digital</span></div>`;
-    editorRef.current?.focus();
-    executeCommand('insertHTML', signatureHtml);
-    showNotification('Signature line ditambahkan!', 'success');
-  };
-
-  const togglePageBorder = () => {
-    setPageBorderEnabled(!pageBorderEnabled);
-    showNotification(pageBorderEnabled ? 'Page border dinonaktifkan' : 'Page border diaktifkan', 'info');
-  };
-
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    showNotification(darkMode ? 'Dark Mode dinonaktifkan' : 'Dark Mode diaktifkan', 'info');
-  };
-
-  // --- View Tab Handlers ---
-  const toggleNavPane = () => {
-    setShowNavPane(!showNavPane);
-    showNotification(showNavPane ? 'Navigation Pane disembunyikan' : 'Navigation Pane ditampilkan', 'info');
-  };
-
-  const toggleRuler = () => {
-    setShowRuler(!showRuler);
-    showNotification(showRuler ? 'Ruler disembunyikan' : 'Ruler ditampilkan', 'info');
-  };
-
-  const toggleGridlines = () => {
-    setShowGridlines(!showGridlines);
-    showNotification(showGridlines ? 'Gridlines disembunyikan' : 'Gridlines ditampilkan', 'info');
-  };
-
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch((e) => {
-        console.error('Fullscreen error:', e);
-      });
-      showNotification('Full Screen diaktifkan', 'info');
-    } else {
-      document.exitFullscreen().catch((e) => {
-        console.error('Exit fullscreen error:', e);
-      });
-      showNotification('Full Screen dinonaktifkan', 'info');
-    }
-  };
-
-  // --- Insert Tab Handlers ---
-  const insertShapes = () => {
-    const shapeHtml = `<div class="shape-placeholder" style="width: 100px; height: 100px; background: #3b82f6; border-radius: 8px; display: inline-block; margin: 10px;"></div>`;
-    editorRef.current?.focus();
-    executeCommand('insertHTML', shapeHtml);
-    showNotification('Shape ditambahkan! Klik dan edit sesuai kebutuhan.', 'success');
-  };
-
-  const insertPageBreak = () => {
-    const pageBreakHtml = `<div style="page-break-after: always; border-bottom: 1px dashed #ccc; margin: 20px 0;"></div>`;
-    editorRef.current?.focus();
-    executeCommand('insertHTML', pageBreakHtml);
-    showNotification('Page Break ditambahkan!', 'success');
-  };
-
-  // --- Format Tab Handlers ---
-  const handleCropImage = () => {
-    if (!selectedImageElement) {
-      showNotification('Pilih gambar terlebih dahulu!', 'warning');
-      return;
-    }
-    const img = selectedImageElement.querySelector('img');
-    if (!img) {
-      showNotification('Gambar tidak ditemukan!', 'error');
-      return;
-    }
-    
-    // Initialize crop modal with the current image
-    setCropData({ img, wrapper: selectedImageElement });
-    const rect = img.getBoundingClientRect();
-    const wrapperRect = selectedImageElement.getBoundingClientRect();
-    
-    // Set initial crop rectangle to full image size
-    setCropRect({
-      x: 0,
-      y: 0,
-      width: img.naturalWidth,
-      height: img.naturalHeight
-    });
-    
-    setShowCropModal(true);
-    showNotification('Mode Crop aktif. Klik dan tarik untuk memilih area yang akan dipotong.', 'info');
-  };
-
-  const handleCropMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cropData) return;
-    
-    const canvas = e.currentTarget;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = cropData.img.naturalWidth / rect.width;
-    const scaleY = cropData.img.naturalHeight / rect.height;
-    
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
-    
-    setCropStart({ x, y });
-    setIsCropping(true);
-    setCropRect({ x, y, width: 0, height: 0 });
-  };
-
-  const handleCropMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isCropping || !cropData) return;
-    
-    const canvas = e.currentTarget;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = cropData.img.naturalWidth / rect.width;
-    const scaleY = cropData.img.naturalHeight / rect.height;
-    
-    const currentX = (e.clientX - rect.left) * scaleX;
-    const currentY = (e.clientY - rect.top) * scaleY;
-    
-    const newRect = {
-      x: Math.min(cropStart.x, currentX),
-      y: Math.min(cropStart.y, currentY),
-      width: Math.abs(currentX - cropStart.x),
-      height: Math.abs(currentY - cropStart.y)
-    };
-    
-    setCropRect(newRect);
-  };
-
-  const handleCropMouseUp = () => {
-    setIsCropping(false);
-  };
-
-  const handleCropApply = () => {
-    if (!cropData || cropRect.width === 0 || cropRect.height === 0) {
-      showNotification('Pilih area crop terlebih dahulu!', 'warning');
-      return;
-    }
-    
-    try {
-      // Create a canvas to perform the crop
-      const canvas = document.createElement('canvas');
-      canvas.width = cropRect.width;
-      canvas.height = cropRect.height;
-      const ctx = canvas.getContext('2d');
-      
-      if (!ctx) {
-        showNotification('Gagal membuat context canvas!', 'error');
-        return;
-      }
-      
-      // Draw the cropped portion
-      ctx.drawImage(
-        cropData.img,
-        cropRect.x,
-        cropRect.y,
-        cropRect.width,
-        cropRect.height,
-        0,
-        0,
-        cropRect.width,
-        cropRect.height
-      );
-      
-      // Get the cropped image as data URL
-      const croppedDataUrl = canvas.toDataURL('image/png');
-      
-      // Replace the original image source with the cropped version
-      cropData.img.src = croppedDataUrl;
-      cropData.img.setAttribute('data-rotate', '0');
-      cropData.img.style.transform = 'none';
-      cropData.wrapper.style.minWidth = '';
-      cropData.wrapper.style.minHeight = '';
-      
-      setImageRotate(0);
-      
-      setShowCropModal(false);
-      setCropData(null);
-      showNotification('Gambar berhasil dipotong!', 'success');
-    } catch (err) {
-      showNotification('Gagal memotong gambar!', 'error');
-      console.error('Crop error:', err);
-    }
-  };
-
-  const handleCropCancel = () => {
-    setShowCropModal(false);
-    setCropData(null);
-    setIsCropping(false);
-  };
-
-  const handleRotateImage = () => {
-    if (!selectedImageElement) {
-      showNotification('Pilih gambar terlebih dahulu!', 'warning');
-      return;
-    }
-    const currentRotation = parseInt(selectedImageElement.getAttribute('data-rotate') || '0');
-    const newRotation = (currentRotation + 90) % 360;
-    updateSelectedImage({ rotate: newRotation });
-    showNotification(`Gambar diputar ${newRotation}°`, 'success');
-  };
-
-  const handleShadowToggle = () => {
-    if (!selectedImageElement) {
-      showNotification('Pilih gambar terlebih dahulu!', 'warning');
-      return;
-    }
-    const currentShadow = imageShadow;
-    const newShadow = currentShadow === 'none' ? 'shadow-lg' : 'none';
-    updateSelectedImage({ shadow: newShadow });
-    showNotification(newShadow === 'none' ? 'Shadow dihapus' : 'Shadow ditambahkan', 'success');
   };
 
   // --- Filters data ---
@@ -2371,11 +2149,11 @@ export default function App() {
                           {/* Clipboard Group */}
                           <div className="flex items-center gap-1.5 border-r border-slate-200 pr-3 shrink-0">
                              <div className="flex flex-col gap-1">
-                               <button onClick={handlePaste} className="flex flex-col items-center justify-center p-1 hover:bg-slate-100 rounded" title="Paste (Ctrl+V)"><ClipboardPaste className="h-6 w-6 text-slate-500 mb-1"/><span className="text-[10px]">Paste</span></button>
+                               <button onClick={ribbonPaste} className="flex flex-col items-center justify-center p-1 hover:bg-slate-100 rounded" title="Paste (Ctrl+V)"><ClipboardPaste className="h-6 w-6 text-slate-500 mb-1"/><span className="text-[10px]">Paste</span></button>
                              </div>
                              <div className="flex flex-col gap-1 justify-center">
-                               <button onClick={handleCut} className="flex items-center gap-1 p-1 hover:bg-slate-100 rounded" title="Cut (Ctrl+X)"><Scissors className="h-4 w-4 text-slate-500"/><span className="text-[10px]">Cut</span></button>
-                               <button onClick={handleCopy} className="flex items-center gap-1 p-1 hover:bg-slate-100 rounded" title="Copy (Ctrl+C)"><CopyIcon className="h-4 w-4 text-slate-500"/><span className="text-[10px]">Copy</span></button>
+                               <button onClick={ribbonCut} className="flex items-center gap-1 p-1 hover:bg-slate-100 rounded" title="Cut (Ctrl+X)"><Scissors className="h-4 w-4 text-slate-500"/><span className="text-[10px]">Cut</span></button>
+                               <button onClick={ribbonCopy} className="flex items-center gap-1 p-1 hover:bg-slate-100 rounded" title="Copy (Ctrl+C)"><CopyIcon className="h-4 w-4 text-slate-500"/><span className="text-[10px]">Copy</span></button>
                              </div>
                           </div>
 
@@ -2474,8 +2252,8 @@ export default function App() {
                                <button onClick={() => executeCommand('insertOrderedList')} className="p-1.5 hover:bg-slate-100 rounded"><ListOrdered className="h-3.5 w-3.5" /></button>
                                <button onClick={insertChecklist} className="p-1.5 hover:bg-slate-100 rounded" title="Checklist"><CheckSquare className="h-3.5 w-3.5" /></button>
                                <div className="w-px h-4 bg-slate-200 mx-1"></div>
-                               <button onClick={handleIndentDecrease} className="p-1.5 hover:bg-slate-100 rounded" title="Decrease Indent"><Outdent className="h-3.5 w-3.5" /></button>
-                               <button onClick={handleIndentIncrease} className="p-1.5 hover:bg-slate-100 rounded" title="Increase Indent"><Indent className="h-3.5 w-3.5" /></button>
+                               <button onClick={() => applyWordIndent('decrease')} className="p-1.5 hover:bg-slate-100 rounded" title="Decrease Indent"><Outdent className="h-3.5 w-3.5" /></button>
+                               <button onClick={() => applyWordIndent('increase')} className="p-1.5 hover:bg-slate-100 rounded" title="Increase Indent"><Indent className="h-3.5 w-3.5" /></button>
                             </div>
                             <div className="flex items-center gap-0.5 mt-1">
                                <button onClick={() => executeCommand('justifyLeft')} className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-blue-600"><AlignLeft className="h-3.5 w-3.5" /></button>
@@ -2483,91 +2261,66 @@ export default function App() {
                                <button onClick={() => executeCommand('justifyRight')} className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-blue-600"><AlignRight className="h-3.5 w-3.5" /></button>
                                <button onClick={() => executeCommand('justifyFull')} className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-blue-600"><AlignJustify className="h-3.5 w-3.5" /></button>
                                <div className="w-px h-4 bg-slate-200 mx-1"></div>
-                               {/* Line Spacing with dropdown */}
                                <div className="relative">
-                                 <button 
+                                 <button
+                                   type="button"
+                                   id="ribbon-btn-lineSpacing"
                                    onClick={(e) => {
                                      const rect = e.currentTarget.getBoundingClientRect();
                                      setPopoverCoords({ top: rect.bottom, left: rect.left });
-                                     setShowLineSpacingDropdown(!showLineSpacingDropdown);
+                                     setOpenImagePopover(openImagePopover === 'lineSpacing' ? null : 'lineSpacing');
                                    }}
-                                   className="p-1.5 hover:bg-slate-100 rounded flex items-center" 
-                                   title="Line Spacing"
-                                 >
-                                   <Baseline className="h-3.5 w-3.5 mr-0.5" />
-                                   <ChevronDown className="h-3 w-3" />
+                                   className="p-1.5 hover:bg-slate-100 rounded" title="Line & Paragraph Spacing"><Baseline className="h-3.5 w-3.5" />
                                  </button>
-                                 {showLineSpacingDropdown && popoverCoords && createPortal(
+                                 {openImagePopover === 'lineSpacing' && popoverCoords && createPortal(
                                    <>
-                                     <div className="fixed inset-0 z-40 bg-transparent" onClick={() => { setShowLineSpacingDropdown(false); setPopoverCoords(null); }} />
+                                     <div className="fixed inset-0 z-40 bg-transparent" onClick={() => { setOpenImagePopover(null); setPopoverCoords(null); }} />
                                      <div
-                                       className="fixed bg-white border border-slate-200 rounded p-2 shadow-xl z-50 min-w-[150px]"
+                                       className="fixed bg-white border border-slate-200 rounded-lg p-3 shadow-xl z-50 w-56"
                                        style={{ top: `${popoverCoords.top}px`, left: `${popoverCoords.left}px` }}
                                      >
-                                       <div className="text-[10px] font-semibold text-slate-500 mb-2 px-2">Line Spacing (pt)</div>
-                                       {[8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48].map((pt) => (
-                                         <button
-                                           key={pt}
-                                           onClick={() => handleLineSpacing(pt)}
-                                           className={`w-full text-left px-3 py-1.5 text-xs rounded hover:bg-slate-100 ${lineSpacingPt === pt ? 'bg-blue-50 text-blue-700' : 'text-slate-700'}`}
-                                         >
-                                           {pt} pt
-                                         </button>
-                                       ))}
-                                       <div className="border-t border-slate-200 my-1"></div>
-                                       <div className="px-2 py-1 text-[10px] text-slate-400">Max: 1584 pt</div>
-                                     </div>
-                                   </>,
-                                   document.body
-                                 )}
-                               </div>
-                               {/* Paragraph Spacing Button */}
-                               <div className="relative">
-                                 <button 
-                                   onClick={(e) => {
-                                     const rect = e.currentTarget.getBoundingClientRect();
-                                     setPopoverCoords({ top: rect.bottom, left: rect.left });
-                                     setShowSpacingDropdown(!showSpacingDropdown);
-                                   }}
-                                   className="p-1.5 hover:bg-slate-100 rounded flex items-center" 
-                                   title="Paragraph Spacing"
-                                 >
-                                   <ArrowUp className="h-3.5 w-3.5 mr-0.5 rotate-45" />
-                                   <ChevronDown className="h-3 w-3" />
-                                 </button>
-                                 {showSpacingDropdown && popoverCoords && createPortal(
-                                   <>
-                                     <div className="fixed inset-0 z-40 bg-transparent" onClick={() => { setShowSpacingDropdown(false); setPopoverCoords(null); }} />
-                                     <div
-                                       className="fixed bg-white border border-slate-200 rounded p-3 shadow-xl z-50 min-w-[180px]"
-                                       style={{ top: `${popoverCoords.top}px`, left: `${popoverCoords.left}px` }}
-                                     >
-                                       <div className="text-[10px] font-semibold text-slate-500 mb-2">Spacing Before</div>
-                                       <div className="flex flex-wrap gap-1 mb-3">
-                                         {[0, 6, 12, 18, 24, 30, 36].map((pt) => (
+                                       <div className="text-[10px] font-semibold text-slate-500 mb-1.5">Line Spacing</div>
+                                       <div className="flex flex-col gap-0.5 mb-3">
+                                         {[['1.0 (Single)', '1'], ['1.15', '1.15'], ['1.5', '1.5'], ['2.0 (Double)', '2']].map(([label, val]) => (
                                            <button
-                                             key={pt}
-                                             onClick={() => handleSpacingBefore(pt)}
-                                             className={`px-2 py-1 text-xs rounded border ${spacingBefore === pt ? 'bg-blue-50 border-blue-500 text-blue-700' : 'border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+                                             key={val}
+                                             onClick={() => { applyLineSpacing(val); setOpenImagePopover(null); }}
+                                             className="text-left px-2 py-1 text-xs rounded hover:bg-slate-100 text-slate-700"
                                            >
-                                             {pt} pt
+                                             {label}
                                            </button>
                                          ))}
                                        </div>
-                                       <div className="text-[10px] font-semibold text-slate-500 mb-2">Spacing After</div>
-                                       <div className="flex flex-wrap gap-1">
-                                         {[0, 6, 12, 18, 24, 30, 36].map((pt) => (
-                                           <button
-                                             key={pt}
-                                             onClick={() => handleSpacingAfter(pt)}
-                                             className={`px-2 py-1 text-xs rounded border ${spacingAfter === pt ? 'bg-blue-50 border-blue-500 text-blue-700' : 'border-slate-200 text-slate-700 hover:bg-slate-50'}`}
-                                           >
-                                             {pt} pt
-                                           </button>
-                                         ))}
+                                       <div className="text-[10px] font-semibold text-slate-500 mb-1.5 border-t border-slate-100 pt-2">Spacing (pt)</div>
+                                       <div className="flex items-center gap-2 mb-1.5">
+                                         <label className="text-[10px] text-slate-500 w-14">Before</label>
+                                         <input
+                                           type="number" min={0} max={1584} defaultValue={0}
+                                           id="spacing-before-input"
+                                           className="border border-slate-200 rounded px-1.5 py-0.5 text-xs w-full focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                         />
                                        </div>
-                                       <div className="border-t border-slate-200 my-2"></div>
-                                       <div className="px-1 py-1 text-[10px] text-slate-400">Range: 0-1584 pt</div>
+                                       <div className="flex items-center gap-2 mb-2">
+                                         <label className="text-[10px] text-slate-500 w-14">After</label>
+                                         <input
+                                           type="number" min={0} max={1584} defaultValue={0}
+                                           id="spacing-after-input"
+                                           className="border border-slate-200 rounded px-1.5 py-0.5 text-xs w-full focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                         />
+                                       </div>
+                                       <button
+                                         onClick={() => {
+                                           const beforeEl = document.getElementById('spacing-before-input') as HTMLInputElement;
+                                           const afterEl = document.getElementById('spacing-after-input') as HTMLInputElement;
+                                           const before = Math.min(1584, Math.max(0, parseInt(beforeEl?.value || '0', 10) || 0));
+                                           const after = Math.min(1584, Math.max(0, parseInt(afterEl?.value || '0', 10) || 0));
+                                           applyParagraphSpacing(before, after);
+                                           setOpenImagePopover(null);
+                                         }}
+                                         className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-1.5 rounded"
+                                       >
+                                         Terapkan
+                                       </button>
                                      </div>
                                    </>,
                                    document.body
@@ -2595,14 +2348,56 @@ export default function App() {
         <TableIcon className="h-5 w-5 mb-1 text-indigo-500" />
         <span className="text-[10px]">Table</span>
       </button>
-      <button onClick={insertShapes} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
-        <Shapes className="h-5 w-5 mb-1 text-emerald-500" />
-        <span className="text-[10px]">Shapes</span>
-      </button>
-      <button onClick={insertIcon} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
+      <div className="relative">
+        <button
+          type="button"
+          id="ribbon-btn-shapes"
+          onClick={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            setPopoverCoords({ top: rect.bottom, left: rect.left });
+            setOpenImagePopover(openImagePopover === 'shapes' ? null : 'shapes');
+          }}
+          className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
+          <Shapes className="h-5 w-5 mb-1 text-emerald-500" />
+          <span className="text-[10px]">Shapes</span>
+        </button>
+        {openImagePopover === 'shapes' && popoverCoords && createPortal(
+          <>
+            <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setOpenImagePopover(null)} />
+            <div className="fixed bg-white border border-slate-200 rounded-lg p-2 shadow-xl z-50 grid grid-cols-3 gap-2" style={{ top: `${popoverCoords.top}px`, left: `${popoverCoords.left}px` }}>
+              {(Object.keys(SHAPE_SVGS) as Array<keyof typeof SHAPE_SVGS>).map((shape) => (
+                <button key={shape} onClick={() => insertShape(shape)} className="p-2 border border-slate-100 rounded hover:bg-slate-50 flex items-center justify-center" title={shape} dangerouslySetInnerHTML={{ __html: SHAPE_SVGS[shape].replace(/width="\d+" height="\d+"/, 'width="40" height="40"') }} />
+              ))}
+            </div>
+          </>,
+          document.body
+        )}
+      </div>
+      <div className="relative">
+        <button
+          type="button"
+          id="ribbon-btn-icons"
+          onClick={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            setPopoverCoords({ top: rect.bottom, left: rect.left });
+            setOpenImagePopover(openImagePopover === 'icons' ? null : 'icons');
+          }}
+          className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
         <Smile className="h-5 w-5 mb-1 text-yellow-500" />
         <span className="text-[10px]">Icons</span>
       </button>
+        {openImagePopover === 'icons' && popoverCoords && createPortal(
+          <>
+            <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setOpenImagePopover(null)} />
+            <div className="fixed bg-white border border-slate-200 rounded-lg p-2 shadow-xl z-50 grid grid-cols-4 gap-1 w-48" style={{ top: `${popoverCoords.top}px`, left: `${popoverCoords.left}px` }}>
+              {ICON_EMOJIS.map((emoji) => (
+                <button key={emoji} onClick={() => insertIconEmoji(emoji)} className="text-lg p-1.5 hover:bg-slate-100 rounded">{emoji}</button>
+              ))}
+            </div>
+          </>,
+          document.body
+        )}
+      </div>
       <button onClick={triggerYoutubeEmbed} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
         <Youtube className="h-5 w-5 mb-1 text-red-600" />
         <span className="text-[10px]">YouTube</span>
@@ -2623,11 +2418,11 @@ export default function App() {
       </button>
     </div>
     <div className="flex items-center gap-2 shrink-0">
-      <button onClick={insertTextBox} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
+      <button onClick={insertTextBoxBlock} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
         <Type className="h-5 w-5 mb-1 text-slate-500" />
         <span className="text-[10px]">Text Box</span>
       </button>
-      <button onClick={insertSignature} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
+      <button onClick={() => setShowSignatureModal(true)} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
         <PenTool className="h-5 w-5 mb-1 text-slate-500" />
         <span className="text-[10px]">Signature</span>
       </button>
@@ -2641,25 +2436,119 @@ export default function App() {
 
                       {activeRibbonTab === 'Design' && (
                         <div className="flex items-center gap-4 shrink-0">
-                          <button onClick={() => setShowThemeDropdown(!showThemeDropdown)} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600 relative"><Palette className="h-6 w-6 mb-1 text-purple-500"/><span className="text-[10px]">Themes</span>{showThemeDropdown && <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1 w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-blue-500"></span>}</button>
-                          <button onClick={() => setShowColorDropdown(!showColorDropdown)} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><PaintBucket className="h-6 w-6 mb-1 text-pink-500"/><span className="text-[10px]">Colors</span></button>
-                          <button onClick={() => setShowFontDropdown(!showFontDropdown)} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Type className="h-6 w-6 mb-1 text-slate-700"/><span className="text-[10px]">Fonts</span></button>
+                          <div className="relative">
+                            <button
+                              type="button"
+                              id="ribbon-btn-themes"
+                              onClick={(e) => {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                setPopoverCoords({ top: rect.bottom, left: rect.left });
+                                setOpenImagePopover(openImagePopover === 'themes' ? null : 'themes');
+                              }}
+                              className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Palette className="h-6 w-6 mb-1 text-purple-500"/><span className="text-[10px]">Themes</span></button>
+                            {openImagePopover === 'themes' && popoverCoords && createPortal(
+                              <>
+                                <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setOpenImagePopover(null)} />
+                                <div className="fixed bg-white border border-slate-200 rounded-lg p-2 shadow-xl z-50 w-48" style={{ top: `${popoverCoords.top}px`, left: `${popoverCoords.left}px` }}>
+                                  {Object.entries(DOC_THEMES).map(([name, theme]) => (
+                                    <button
+                                      key={name}
+                                      onClick={() => { setDocAccentColor(theme.accent); setDocFont(theme.font); setOpenImagePopover(null); }}
+                                      className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-slate-100 text-slate-700"
+                                    >
+                                      <span className="h-3.5 w-3.5 rounded-full border border-slate-200" style={{ backgroundColor: theme.accent }}></span>
+                                      {name}
+                                    </button>
+                                  ))}
+                                </div>
+                              </>,
+                              document.body
+                            )}
+                          </div>
+                          <div className="relative">
+                            <button
+                              type="button"
+                              id="ribbon-btn-colors"
+                              onClick={(e) => {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                setPopoverCoords({ top: rect.bottom, left: rect.left });
+                                setOpenImagePopover(openImagePopover === 'docColors' ? null : 'docColors');
+                              }}
+                              className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><PaintBucket className="h-6 w-6 mb-1 text-pink-500"/><span className="text-[10px]">Colors</span></button>
+                            {openImagePopover === 'docColors' && popoverCoords && createPortal(
+                              <>
+                                <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setOpenImagePopover(null)} />
+                                <div className="fixed bg-white border border-slate-200 rounded-lg p-3 shadow-xl z-50 w-52" style={{ top: `${popoverCoords.top}px`, left: `${popoverCoords.left}px` }}>
+                                  <div className="text-[10px] font-semibold text-slate-500 mb-2">Warna Aksen Dokumen</div>
+                                  <div className="grid grid-cols-5 gap-1.5 mb-2">
+                                    {['#a8823d', '#334155', '#166534', '#c2410c', '#4f46e5', '#0891b2', '#be185d', '#65a30d', '#78716c', '#1e293b'].map((c) => (
+                                      <button key={c} onClick={() => setDocAccentColor(c)} className="h-6 w-6 rounded-full border border-slate-200" style={{ backgroundColor: c }} />
+                                    ))}
+                                  </div>
+                                  <input type="color" value={docAccentColor} onChange={(e) => setDocAccentColor(e.target.value)} className="w-full h-8 rounded border border-slate-200 cursor-pointer" />
+                                </div>
+                              </>,
+                              document.body
+                            )}
+                          </div>
+                          <div className="relative">
+                            <button
+                              type="button"
+                              id="ribbon-btn-fonts"
+                              onClick={(e) => {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                setPopoverCoords({ top: rect.bottom, left: rect.left });
+                                setOpenImagePopover(openImagePopover === 'docFonts' ? null : 'docFonts');
+                              }}
+                              className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Type className="h-6 w-6 mb-1 text-slate-700"/><span className="text-[10px]">Fonts</span></button>
+                            {openImagePopover === 'docFonts' && popoverCoords && createPortal(
+                              <>
+                                <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setOpenImagePopover(null)} />
+                                <div className="fixed bg-white border border-slate-200 rounded-lg p-2 shadow-xl z-50 w-52" style={{ top: `${popoverCoords.top}px`, left: `${popoverCoords.left}px` }}>
+                                  {[
+                                    ['Default (Inter)', 'inherit'],
+                                    ['Elegant Serif (Fraunces)', "'Fraunces', Georgia, serif"],
+                                    ['Classic Serif (Georgia)', 'Georgia, serif'],
+                                    ['Modern (Space Grotesk)', "'Space Grotesk', sans-serif"],
+                                    ['Monospace (Technical)', "'JetBrains Mono', monospace"],
+                                  ].map(([label, val]) => (
+                                    <button key={val} onClick={() => { setDocFont(val); setOpenImagePopover(null); }} className="block w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-100 text-slate-700" style={{ fontFamily: val }}>
+                                      {label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </>,
+                              document.body
+                            )}
+                          </div>
                           <div className="w-px h-10 bg-slate-200 mx-2"></div>
-                          <button onClick={() => setShowWatermarkModal(true)} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Stamp className="h-6 w-6 mb-1 text-slate-400"/><span className="text-[10px]">Watermark</span></button>
-                          <button onClick={togglePageBorder} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Square className="h-6 w-6 mb-1 text-slate-400"/><span className="text-[10px]">Page Borders</span></button>
-                          <button onClick={toggleDarkMode} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Moon className="h-6 w-6 mb-1 text-slate-600"/><span className="text-[10px]">Dark Mode</span></button>
+                          <button
+                            onClick={() => {
+                              const val = prompt('Masukkan teks watermark (kosongkan untuk menghapus):', watermarkText || 'DRAFT');
+                              if (val !== null) setWatermarkText(val);
+                            }}
+                            className={`flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded ${watermarkText ? 'text-purple-600' : 'text-slate-600'}`}
+                          ><Stamp className="h-6 w-6 mb-1 text-slate-400"/><span className="text-[10px]">Watermark</span></button>
+                          <button
+                            onClick={() => setPageBorderOn(!pageBorderOn)}
+                            className={`flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded ${pageBorderOn ? 'text-blue-600 bg-blue-50' : 'text-slate-600'}`}
+                          ><Square className="h-6 w-6 mb-1 text-slate-400"/><span className="text-[10px]">Page Borders</span></button>
+                          <button
+                            onClick={() => setDocDarkMode(!docDarkMode)}
+                            className={`flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded ${docDarkMode ? 'text-indigo-600 bg-indigo-50' : 'text-slate-600'}`}
+                          ><Moon className="h-6 w-6 mb-1 text-slate-600"/><span className="text-[10px]">Dark Mode</span></button>
                         </div>
                       )}
 
                       {activeRibbonTab === 'View' && (
                         <div className="flex items-center gap-4 shrink-0">
-                          <button onClick={() => setZoomLevel(zoomLevel === 100 ? 125 : (zoomLevel === 125 ? 75 : 100))} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><ZoomIn className="h-6 w-6 mb-1 text-slate-500"/><span className="text-[10px]">Zoom {zoomLevel}%</span></button>
-                          <button onClick={toggleFullscreen} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Maximize className="h-6 w-6 mb-1 text-slate-500"/><span className="text-[10px]">Full Screen</span></button>
-                          <button onClick={toggleNavPane} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><ListIcon className="h-6 w-6 mb-1 text-slate-500"/><span className="text-[10px]">Nav Pane</span></button>
+                          <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><ZoomIn className="h-6 w-6 mb-1 text-slate-500"/><span className="text-[10px]">Zoom</span></button>
+                          <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Maximize className="h-6 w-6 mb-1 text-slate-500"/><span className="text-[10px]">Full Screen</span></button>
+                          <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><ListIcon className="h-6 w-6 mb-1 text-slate-500"/><span className="text-[10px]">Nav Pane</span></button>
                           <div className="w-px h-10 bg-slate-200 mx-2"></div>
                           <div className="flex flex-col gap-1 text-[10px]">
-                            <label className="flex items-center gap-1"><input type="checkbox" className="rounded border-slate-300" checked={showRuler} onChange={toggleRuler}/> Ruler</label>
-                            <label className="flex items-center gap-1"><input type="checkbox" className="rounded border-slate-300" checked={showGridlines} onChange={toggleGridlines}/> Gridlines</label>
+                            <label className="flex items-center gap-1"><input type="checkbox" className="rounded border-slate-300" defaultChecked/> Ruler</label>
+                            <label className="flex items-center gap-1"><input type="checkbox" className="rounded border-slate-300"/> Gridlines</label>
                           </div>
                           <button onClick={() => window.print()} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600 ml-4"><Printer className="h-6 w-6 mb-1 text-slate-500"/><span className="text-[10px]">Print Preview</span></button>
                         </div>
@@ -2783,9 +2672,9 @@ export default function App() {
                           </div>
                           
                           <div className="w-px h-10 bg-slate-200 mx-2"></div>
-                          <button onClick={handleCropImage} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Crop className="h-6 w-6 mb-1"/><span className="text-[10px]">Crop</span></button>
-                          <button onClick={handleRotateImage} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><RotateCw className="h-6 w-6 mb-1"/><span className="text-[10px]">Rotate</span></button>
-                          <button onClick={handleShadowToggle} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Box className="h-6 w-6 mb-1"/><span className="text-[10px]">Shadow</span></button>
+                          <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600 opacity-50 cursor-not-allowed"><Crop className="h-6 w-6 mb-1"/><span className="text-[10px]">Crop</span></button>
+                          <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600 opacity-50 cursor-not-allowed"><RotateCw className="h-6 w-6 mb-1"/><span className="text-[10px]">Rotate</span></button>
+                          <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600 opacity-50 cursor-not-allowed"><Box className="h-6 w-6 mb-1"/><span className="text-[10px]">Shadow</span></button>
                         </div>
                       )}
 
@@ -2868,7 +2757,6 @@ export default function App() {
                   ref={editorRef}
                   id="contentEditor"
                   contentEditable={isEditing}
-                  onKeyDown={handleListKeyDown}
                   onInput={(e) => {
                     const html = (e.target as HTMLDivElement).innerHTML;
                     setEditorContent(html);
@@ -2878,6 +2766,7 @@ export default function App() {
                   onKeyUp={checkSelectionFormats}
                   onMouseUp={checkSelectionFormats}
                   onPaste={isEditing ? handlePaste : undefined}
+                  onKeyDown={isEditing ? handleEditorKeyDown : undefined}
                   onClick={isEditing ? handleEditorClick : handleViewerClick}
                   onMouseDown={isEditing ? handleMouseDown : undefined}
                   className="editor-content custom-scrollbar"
@@ -3083,76 +2972,32 @@ export default function App() {
         </div>
       )}
 
-      {/* --- POPUP WINDOW: Crop Image Modal --- */}
-      {showCropModal && cropData && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4" id="cropPopup">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
-            <h3 className="text-lg font-extrabold text-slate-900 flex items-center mb-4">
-              <Crop className="h-5 w-5 text-indigo-600 mr-2" /> Potong Gambar (Crop)
-            </h3>
-            <p className="text-xs text-slate-400 mb-4">
-              Klik dan tarik pada gambar untuk memilih area yang akan dipotong.
-            </p>
-            <div 
-              className="relative border border-slate-200 rounded-lg overflow-hidden cursor-crosshair bg-slate-50"
-              style={{ maxHeight: '50vh', display: 'inline-block' }}
-              onMouseDown={handleCropMouseDown}
-              onMouseMove={handleCropMouseMove}
-              onMouseUp={handleCropMouseUp}
-              onMouseLeave={handleCropMouseUp}
-            >
-              <img 
-                src={cropData.img.src} 
-                alt="Crop preview" 
-                className="max-h-[50vh] w-auto block select-none pointer-events-none"
-                draggable={false}
-              />
-              {/* Crop overlay */}
-              {cropRect.width > 0 && cropRect.height > 0 && (
-                <>
-                  {/* Dark overlay outside crop area */}
-                  <div 
-                    className="absolute inset-0 bg-black/50 pointer-events-none"
-                    style={{
-                      clipPath: `polygon(
-                        0% 0%, 100% 0%, 100% 100%, 0% 100%,
-                        ${(cropRect.x / cropData.img.naturalWidth) * 100}% ${(cropRect.y / cropData.img.naturalHeight) * 100}%,
-                        ${((cropRect.x + cropRect.width) / cropData.img.naturalWidth) * 100}% ${(cropRect.y / cropData.img.naturalHeight) * 100}%,
-                        ${((cropRect.x + cropRect.width) / cropData.img.naturalWidth) * 100}% ${((cropRect.y + cropRect.height) / cropData.img.naturalHeight) * 100}%,
-                        ${(cropRect.x / cropData.img.naturalWidth) * 100}% ${((cropRect.y + cropRect.height) / cropData.img.naturalHeight) * 100}%
-                      )`
-                    }}
-                  />
-                  {/* Crop rectangle border */}
-                  <div 
-                    className="absolute border-2 border-dashed border-white pointer-events-none"
-                    style={{
-                      left: `${(cropRect.x / cropData.img.naturalWidth) * 100}%`,
-                      top: `${(cropRect.y / cropData.img.naturalHeight) * 100}%`,
-                      width: `${(cropRect.width / cropData.img.naturalWidth) * 100}%`,
-                      height: `${(cropRect.height / cropData.img.naturalHeight) * 100}%`
-                    }}
-                  />
-                </>
-              )}
+      {/* --- POPUP WINDOW: Signature Pad Modal --- */}
+      {showSignatureModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+            <div className="mb-4">
+              <h2 className="text-lg font-black text-slate-900">Tambah Tanda Tangan</h2>
+              <p className="text-xs text-slate-400 mt-1">Gambar tanda tangan Anda di bawah ini menggunakan mouse atau layar sentuh.</p>
             </div>
-            <div className="flex items-center justify-between mt-4">
-              <div className="text-xs text-slate-500">
-                Ukuran: {Math.round(cropRect.width)} x {Math.round(cropRect.height)} px
-              </div>
-              <div className="flex items-center space-x-2.5">
-                <button
-                  onClick={handleCropCancel}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold py-2.5 px-4 rounded-xl transition-all"
-                >
-                  Batal
-                </button>
-                <button
-                  onClick={handleCropApply}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2.5 px-5 rounded-xl transition-all shadow-md shadow-indigo-100"
-                >
-                  Terapkan Crop
-                </button>
+            <canvas
+              ref={signatureCanvasRef}
+              width={400}
+              height={160}
+              className="w-full border border-dashed border-slate-300 rounded-lg bg-slate-50 touch-none cursor-crosshair"
+              onMouseDown={handleSignatureStart}
+              onMouseMove={handleSignatureMove}
+              onMouseUp={handleSignatureEnd}
+              onMouseLeave={handleSignatureEnd}
+              onTouchStart={handleSignatureStart}
+              onTouchMove={handleSignatureMove}
+              onTouchEnd={handleSignatureEnd}
+            />
+            <div className="flex items-center justify-between mt-4 gap-2">
+              <button onClick={clearSignatureCanvas} className="text-sm font-semibold text-slate-500 hover:text-slate-700 px-3 py-2">Bersihkan</button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => { setShowSignatureModal(false); clearSignatureCanvas(); }} className="text-sm font-semibold text-slate-500 hover:bg-slate-100 px-4 py-2 rounded-lg">Batal</button>
+                <button onClick={insertSignatureFromCanvas} className="text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg">Sisipkan</button>
               </div>
             </div>
           </div>

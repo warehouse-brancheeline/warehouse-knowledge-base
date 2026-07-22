@@ -66,144 +66,44 @@
   background-color: var(--bronze-dim);
 }
 
-/* Lists styling - Microsoft Word-like multi-level */
-.editor-content ul {
-  @apply list-none pl-0 mb-4 space-y-1;
-}
-
+/* Lists styling — Word-style nesting: hanging indent, cycling bullet/number per level */
+.editor-content ul,
 .editor-content ol {
-  @apply list-none pl-0 mb-4 space-y-1;
-}
-
-/* Unordered list bullets with proper nesting */
-.editor-content ul > li::before {
-  content: '•';
-  display: inline-block;
-  width: 1em;
-  margin-left: -1em;
-  color: #334155;
-}
-
-/* Level 2 bullets */
-.editor-content ul ul > li::before {
-  content: '○';
-}
-
-/* Level 3 bullets */
-.editor-content ul ul ul > li::before {
-  content: '▪';
-}
-
-/* Level 4+ repeats pattern */
-.editor-content ul ul ul ul > li::before {
-  content: '•';
-}
-
-.editor-content ul ul ul ul ul > li::before {
-  content: '○';
-}
-
-.editor-content ul ul ul ul ul ul > li::before {
-  content: '▪';
-}
-
-/* Ordered list numbering with CSS counters */
-.editor-content ol {
-  counter-reset: item;
-}
-
-.editor-content ol > li {
-  position: relative;
-}
-
-.editor-content ol > li::before {
-  content: counter(item) '. ';
-  counter-increment: item;
-  display: inline-block;
-  width: 1.5em;
-  margin-left: -1.5em;
-  color: #334155;
-}
-
-/* Nested ordered lists - letter style (a., b., c.) */
-.editor-content ol ol {
-  counter-reset: subitem;
-}
-
-.editor-content ol ol > li::before {
-  content: counter(subitem, lower-alpha) '. ';
-  counter-increment: subitem;
-}
-
-/* Third level - roman numerals (i., ii., iii.) */
-.editor-content ol ol ol {
-  counter-reset: subsubitem;
-}
-
-.editor-content ol ol ol > li::before {
-  content: counter(subsubitem, lower-roman) '. ';
-  counter-increment: subsubitem;
-}
-
-/* Fourth level - decimal again (1., 2., 3.) */
-.editor-content ol ol ol ol {
-  counter-reset: item4;
-}
-
-.editor-content ol ol ol ol > li::before {
-  content: counter(item4) '. ';
-  counter-increment: item4;
-}
-
-/* Fifth level - letter again (a., b., c.) */
-.editor-content ol ol ol ol ol {
-  counter-reset: item5;
-}
-
-.editor-content ol ol ol ol ol > li::before {
-  content: counter(item5, lower-alpha) '. ';
-  counter-increment: item5;
-}
-
-/* Sixth level - roman again (i., ii., iii.) */
-.editor-content ol ol ol ol ol ol {
-  counter-reset: item6;
-}
-
-.editor-content ol ol ol ol ol ol > li::before {
-  content: counter(item6, lower-roman) '. ';
-  counter-increment: item6;
-}
-
-/* Indentation for nested lists - consistent 24px per level */
-.editor-content ul > li,
-.editor-content ol > li {
-  padding-left: 1.5em;
-}
-
-.editor-content ul ul,
-.editor-content ol ol {
+  @apply mb-4 space-y-1;
+  list-style-position: outside;
   padding-left: 24px;
+  margin-top: 0;
+  margin-bottom: 0;
 }
-
-.editor-content ul ul ul,
-.editor-content ol ol ol {
-  padding-left: 48px;
-}
-
-.editor-content ul ul ul ul,
-.editor-content ol ol ol ol {
-  padding-left: 72px;
-}
-
-.editor-content ul ul ul ul ul,
-.editor-content ol ol ol ol ol {
-  padding-left: 96px;
+.editor-content > ul:last-child,
+.editor-content > ol:last-child {
+  margin-bottom: 1rem;
 }
 
 .editor-content li {
   @apply text-slate-700 leading-relaxed;
+  padding-left: 2px;
 }
+
+/* Bulleted lists: • level1, ○ level2, ▪ level3 — repeats every 3 levels, like Word */
+.editor-content ul { list-style-type: disc; }
+.editor-content ul ul { list-style-type: circle; }
+.editor-content ul ul ul { list-style-type: square; }
+.editor-content ul ul ul ul { list-style-type: disc; }
+.editor-content ul ul ul ul ul { list-style-type: circle; }
+.editor-content ul ul ul ul ul ul { list-style-type: square; }
+
+/* Numbered lists: 1. a. i. 1) a) i) — repeats every 3 levels, like Word */
+.editor-content ol { list-style-type: decimal; }
+.editor-content ol ol { list-style-type: lower-alpha; }
+.editor-content ol ol ol { list-style-type: lower-roman; }
+.editor-content ol ol ol ol { list-style-type: decimal; }
+.editor-content ol ol ol ol > li::marker { content: counter(list-item) ") "; }
+.editor-content ol ol ol ol ol { list-style-type: lower-alpha; }
+.editor-content ol ol ol ol ol > li::marker { content: counter(list-item, lower-alpha) ") "; }
+.editor-content ol ol ol ol ol ol { list-style-type: lower-roman; }
+.editor-content ol ol ol ol ol ol > li::marker { content: counter(list-item, lower-roman) ") "; }
+
 
 /* Table styling - Confluence style */
 .editor-content table {
@@ -409,7 +309,32 @@
   margin: 0 4px;
 }
 
-/* Hide toolbar and resize handles when printing */
+/* Page Break marker */
+.page-break-marker {
+  @apply flex items-center justify-center text-[10px] font-semibold uppercase tracking-wider text-slate-400 my-6 select-none;
+}
+.page-break-marker::before,
+.page-break-marker::after {
+  content: '';
+  flex: 1;
+  border-top: 1px dashed #cbd5e1;
+  margin: 0 8px;
+}
+@media print {
+  .page-break-marker {
+    display: block !important;
+    border: none !important;
+    height: 0;
+    margin: 0;
+    page-break-before: always;
+  }
+  .page-break-marker::before,
+  .page-break-marker::after {
+    display: none;
+  }
+}
+
+
 @media print {
   .media-toolbar, .resize-handle, .formatting-ribbon, header, aside, .btn-row, button, .admin-controls-badge {
     display: none !important;
