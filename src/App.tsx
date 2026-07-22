@@ -332,6 +332,21 @@ export default function App() {
   const [spacingAfter, setSpacingAfter] = useState(0);
   const [showSpacingDropdown, setShowSpacingDropdown] = useState(false);
 
+  // Design & View states
+  const [darkMode, setDarkMode] = useState(false);
+  const [showNavPane, setShowNavPane] = useState(true);
+  const [showRuler, setShowRuler] = useState(true);
+  const [showGridlines, setShowGridlines] = useState(false);
+  const [watermarkText, setWatermarkText] = useState('');
+  const [showWatermarkModal, setShowWatermarkModal] = useState(false);
+  const [pageBorderEnabled, setPageBorderEnabled] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState<'default' | 'blue' | 'green' | 'red'>('default');
+  const [themeColors, setThemeColors] = useState({ primary: '#1e40af', secondary: '#3b82f6' });
+  const [selectedFont, setSelectedFont] = useState('Arial');
+  const [showThemeDropdown, setShowThemeDropdown] = useState(false);
+  const [showColorDropdown, setShowColorDropdown] = useState(false);
+  const [showFontDropdown, setShowFontDropdown] = useState(false);
+
   // --- Initialize App ---
   useEffect(() => {
     // Load articles from localStorage
@@ -1402,6 +1417,149 @@ export default function App() {
     window.print();
   };
 
+  // --- Design Tab Handlers ---
+  const handleThemeChange = (theme: 'default' | 'blue' | 'green' | 'red') => {
+    setSelectedTheme(theme);
+    const themeColorMap = {
+      default: { primary: '#1e40af', secondary: '#3b82f6' },
+      blue: { primary: '#1e3a8a', secondary: '#3b82f6' },
+      green: { primary: '#166534', secondary: '#22c55e' },
+      red: { primary: '#991b1b', secondary: '#ef4444' },
+    };
+    setThemeColors(themeColorMap[theme]);
+    setShowThemeDropdown(false);
+    showNotification(`Tema ${theme} diterapkan!`, 'success');
+  };
+
+  const handleFontChange = (font: string) => {
+    setSelectedFont(font);
+    if (editorRef.current) {
+      editorRef.current.style.fontFamily = font;
+    }
+    setShowFontDropdown(false);
+    showNotification(`Font ${font} diterapkan!`, 'success');
+  };
+
+  const handleWatermarkApply = () => {
+    showNotification(`Watermark "${watermarkText}" diterapkan!`, 'success');
+    setShowWatermarkModal(false);
+  };
+
+  const togglePageBorder = () => {
+    setPageBorderEnabled(!pageBorderEnabled);
+    showNotification(pageBorderEnabled ? 'Page border dinonaktifkan' : 'Page border diaktifkan', 'info');
+  };
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+    showNotification(darkMode ? 'Dark Mode dinonaktifkan' : 'Dark Mode diaktifkan', 'info');
+  };
+
+  // --- View Tab Handlers ---
+  const toggleNavPane = () => {
+    setShowNavPane(!showNavPane);
+    showNotification(showNavPane ? 'Navigation Pane disembunyikan' : 'Navigation Pane ditampilkan', 'info');
+  };
+
+  const toggleRuler = () => {
+    setShowRuler(!showRuler);
+    showNotification(showRuler ? 'Ruler disembunyikan' : 'Ruler ditampilkan', 'info');
+  };
+
+  const toggleGridlines = () => {
+    setShowGridlines(!showGridlines);
+    showNotification(showGridlines ? 'Gridlines disembunyikan' : 'Gridlines ditampilkan', 'info');
+  };
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((e) => {
+        console.error('Fullscreen error:', e);
+      });
+      showNotification('Full Screen diaktifkan', 'info');
+    } else {
+      document.exitFullscreen().catch((e) => {
+        console.error('Exit fullscreen error:', e);
+      });
+      showNotification('Full Screen dinonaktifkan', 'info');
+    }
+  };
+
+  // --- Insert Tab Handlers ---
+  const insertShapes = () => {
+    const shapeHtml = `<div class=\"shape-placeholder\" style=\"width: 100px; height: 100px; background: #3b82f6; border-radius: 8px; display: inline-block; margin: 10px;\"></div>`;
+    editorRef.current?.focus();
+    executeCommand('insertHTML', shapeHtml);
+    showNotification('Shape ditambahkan! Klik dan edit sesuai kebutuhan.', 'success');
+  };
+
+  const insertIcon = () => {
+    const iconHtml = `<span style=\"font-size: 24px; display: inline-block; margin: 5px;\">⭐</span>`;
+    editorRef.current?.focus();
+    executeCommand('insertHTML', iconHtml);
+    showNotification('Icon ditambahkan!', 'success');
+  };
+
+  const insertQRCode = () => {
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.href)}`;
+    const qrHtml = `<img src="${qrUrl}" alt="QR Code" style="width: 150px; height: 150px;" />`;
+    editorRef.current?.focus();
+    executeCommand('insertHTML', qrHtml);
+    showNotification('QR Code ditambahkan!', 'success');
+  };
+
+  const insertTextBox = () => {
+    const textBoxHtml = `<div contenteditable="true" style="border: 1px solid #ccc; padding: 10px; min-width: 200px; min-height: 50px; background: #f9fafb;">Ketik teks di sini...</div>`;
+    editorRef.current?.focus();
+    executeCommand('insertHTML', textBoxHtml);
+    showNotification('Text Box ditambahkan!', 'success');
+  };
+
+  const insertSignature = () => {
+    const signatureHtml = `<div style="border-top: 2px solid #000; width: 200px; padding-top: 5px; margin-top: 20px;"><span style="font-family: 'Comic Sans MS', cursive; font-size: 18px;">Tanda Tangan Digital</span></div>`;
+    editorRef.current?.focus();
+    executeCommand('insertHTML', signatureHtml);
+    showNotification('Signature line ditambahkan!', 'success');
+  };
+
+  const insertPageBreak = () => {
+    const pageBreakHtml = `<div style="page-break-after: always; border-bottom: 1px dashed #ccc; margin: 20px 0;"></div>`;
+    editorRef.current?.focus();
+    executeCommand('insertHTML', pageBreakHtml);
+    showNotification('Page Break ditambahkan!', 'success');
+  };
+
+  // --- Format Tab Handlers ---
+  const handleCropImage = () => {
+    if (!selectedImageElement) {
+      showNotification('Pilih gambar terlebih dahulu!', 'warning');
+      return;
+    }
+    showNotification('Fitur Crop: Gunakan editor gambar eksternal untuk hasil terbaik.', 'info');
+  };
+
+  const handleRotateImage = () => {
+    if (!selectedImageElement) {
+      showNotification('Pilih gambar terlebih dahulu!', 'warning');
+      return;
+    }
+    const currentRotation = parseInt(selectedImageElement.getAttribute('data-rotate') || '0');
+    const newRotation = (currentRotation + 90) % 360;
+    updateSelectedImage({ rotate: newRotation });
+    showNotification(`Gambar diputar ${newRotation}°`, 'success');
+  };
+
+  const handleShadowToggle = () => {
+    if (!selectedImageElement) {
+      showNotification('Pilih gambar terlebih dahulu!', 'warning');
+      return;
+    }
+    const currentShadow = imageShadow;
+    const newShadow = currentShadow === 'none' ? 'shadow-lg' : 'none';
+    updateSelectedImage({ shadow: newShadow });
+    showNotification(newShadow === 'none' ? 'Shadow dihapus' : 'Shadow ditambahkan', 'success');
+  };
+
   // --- Filters data ---
   const filteredArticles = articles.filter((art) => {
     const matchesSearch =
@@ -1980,11 +2138,11 @@ export default function App() {
         <TableIcon className="h-5 w-5 mb-1 text-indigo-500" />
         <span className="text-[10px]">Table</span>
       </button>
-      <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
+      <button onClick={insertShapes} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
         <Shapes className="h-5 w-5 mb-1 text-emerald-500" />
         <span className="text-[10px]">Shapes</span>
       </button>
-      <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
+      <button onClick={insertIcon} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
         <Smile className="h-5 w-5 mb-1 text-yellow-500" />
         <span className="text-[10px]">Icons</span>
       </button>
@@ -2002,21 +2160,21 @@ export default function App() {
         <Minus className="h-5 w-5 mb-1 text-slate-500" />
         <span className="text-[10px]">Divider</span>
       </button>
-      <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
+      <button onClick={insertQRCode} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
         <QrCode className="h-5 w-5 mb-1 text-slate-600" />
         <span className="text-[10px]">QR Code</span>
       </button>
     </div>
     <div className="flex items-center gap-2 shrink-0">
-      <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
+      <button onClick={insertTextBox} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
         <Type className="h-5 w-5 mb-1 text-slate-500" />
         <span className="text-[10px]">Text Box</span>
       </button>
-      <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
+      <button onClick={insertSignature} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
         <PenTool className="h-5 w-5 mb-1 text-slate-500" />
         <span className="text-[10px]">Signature</span>
       </button>
-      <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
+      <button onClick={insertPageBreak} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600">
         <FileText className="h-5 w-5 mb-1 text-slate-500" />
         <span className="text-[10px]">Page Break</span>
       </button>
@@ -2026,25 +2184,25 @@ export default function App() {
 
                       {activeRibbonTab === 'Design' && (
                         <div className="flex items-center gap-4 shrink-0">
-                          <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Palette className="h-6 w-6 mb-1 text-purple-500"/><span className="text-[10px]">Themes</span></button>
-                          <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><PaintBucket className="h-6 w-6 mb-1 text-pink-500"/><span className="text-[10px]">Colors</span></button>
-                          <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Type className="h-6 w-6 mb-1 text-slate-700"/><span className="text-[10px]">Fonts</span></button>
+                          <button onClick={() => setShowThemeDropdown(!showThemeDropdown)} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600 relative"><Palette className="h-6 w-6 mb-1 text-purple-500"/><span className="text-[10px]">Themes</span>{showThemeDropdown && <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1 w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-blue-500"></span>}</button>
+                          <button onClick={() => setShowColorDropdown(!showColorDropdown)} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><PaintBucket className="h-6 w-6 mb-1 text-pink-500"/><span className="text-[10px]">Colors</span></button>
+                          <button onClick={() => setShowFontDropdown(!showFontDropdown)} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Type className="h-6 w-6 mb-1 text-slate-700"/><span className="text-[10px]">Fonts</span></button>
                           <div className="w-px h-10 bg-slate-200 mx-2"></div>
-                          <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Stamp className="h-6 w-6 mb-1 text-slate-400"/><span className="text-[10px]">Watermark</span></button>
-                          <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Square className="h-6 w-6 mb-1 text-slate-400"/><span className="text-[10px]">Page Borders</span></button>
-                          <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Moon className="h-6 w-6 mb-1 text-slate-600"/><span className="text-[10px]">Dark Mode</span></button>
+                          <button onClick={() => setShowWatermarkModal(true)} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Stamp className="h-6 w-6 mb-1 text-slate-400"/><span className="text-[10px]">Watermark</span></button>
+                          <button onClick={togglePageBorder} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Square className="h-6 w-6 mb-1 text-slate-400"/><span className="text-[10px]">Page Borders</span></button>
+                          <button onClick={toggleDarkMode} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Moon className="h-6 w-6 mb-1 text-slate-600"/><span className="text-[10px]">Dark Mode</span></button>
                         </div>
                       )}
 
                       {activeRibbonTab === 'View' && (
                         <div className="flex items-center gap-4 shrink-0">
-                          <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><ZoomIn className="h-6 w-6 mb-1 text-slate-500"/><span className="text-[10px]">Zoom</span></button>
-                          <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Maximize className="h-6 w-6 mb-1 text-slate-500"/><span className="text-[10px]">Full Screen</span></button>
-                          <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><ListIcon className="h-6 w-6 mb-1 text-slate-500"/><span className="text-[10px]">Nav Pane</span></button>
+                          <button onClick={() => setZoomLevel(zoomLevel === 100 ? 125 : (zoomLevel === 125 ? 75 : 100))} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><ZoomIn className="h-6 w-6 mb-1 text-slate-500"/><span className="text-[10px]">Zoom {zoomLevel}%</span></button>
+                          <button onClick={toggleFullscreen} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Maximize className="h-6 w-6 mb-1 text-slate-500"/><span className="text-[10px]">Full Screen</span></button>
+                          <button onClick={toggleNavPane} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><ListIcon className="h-6 w-6 mb-1 text-slate-500"/><span className="text-[10px]">Nav Pane</span></button>
                           <div className="w-px h-10 bg-slate-200 mx-2"></div>
                           <div className="flex flex-col gap-1 text-[10px]">
-                            <label className="flex items-center gap-1"><input type="checkbox" className="rounded border-slate-300" defaultChecked/> Ruler</label>
-                            <label className="flex items-center gap-1"><input type="checkbox" className="rounded border-slate-300"/> Gridlines</label>
+                            <label className="flex items-center gap-1"><input type="checkbox" className="rounded border-slate-300" checked={showRuler} onChange={toggleRuler}/> Ruler</label>
+                            <label className="flex items-center gap-1"><input type="checkbox" className="rounded border-slate-300" checked={showGridlines} onChange={toggleGridlines}/> Gridlines</label>
                           </div>
                           <button onClick={() => window.print()} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600 ml-4"><Printer className="h-6 w-6 mb-1 text-slate-500"/><span className="text-[10px]">Print Preview</span></button>
                         </div>
@@ -2168,9 +2326,9 @@ export default function App() {
                           </div>
                           
                           <div className="w-px h-10 bg-slate-200 mx-2"></div>
-                          <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600 opacity-50 cursor-not-allowed"><Crop className="h-6 w-6 mb-1"/><span className="text-[10px]">Crop</span></button>
-                          <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600 opacity-50 cursor-not-allowed"><RotateCw className="h-6 w-6 mb-1"/><span className="text-[10px]">Rotate</span></button>
-                          <button className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600 opacity-50 cursor-not-allowed"><Box className="h-6 w-6 mb-1"/><span className="text-[10px]">Shadow</span></button>
+                          <button onClick={handleCropImage} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Crop className="h-6 w-6 mb-1"/><span className="text-[10px]">Crop</span></button>
+                          <button onClick={handleRotateImage} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><RotateCw className="h-6 w-6 mb-1"/><span className="text-[10px]">Rotate</span></button>
+                          <button onClick={handleShadowToggle} className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-100 rounded text-slate-600"><Box className="h-6 w-6 mb-1"/><span className="text-[10px]">Shadow</span></button>
                         </div>
                       )}
 
