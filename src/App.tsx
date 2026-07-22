@@ -1445,6 +1445,41 @@ export default function App() {
     setShowWatermarkModal(false);
   };
 
+  const handleColorChange = (color: string) => {
+    setThemeColors({ ...themeColors, primary: color });
+    setShowColorDropdown(false);
+    showNotification(`Warna ${color} diterapkan!`, 'success');
+  };
+
+  const insertIcon = () => {
+    const iconHtml = `<span style="font-size: 24px; display: inline-block; margin: 5px;">⭐</span>`;
+    editorRef.current?.focus();
+    executeCommand('insertHTML', iconHtml);
+    showNotification('Icon ditambahkan!', 'success');
+  };
+
+  const insertQRCode = () => {
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.href)}`;
+    const qrHtml = `<img src="${qrUrl}" alt="QR Code" style="width: 150px; height: 150px;" />`;
+    editorRef.current?.focus();
+    executeCommand('insertHTML', qrHtml);
+    showNotification('QR Code ditambahkan!', 'success');
+  };
+
+  const insertTextBox = () => {
+    const textBoxHtml = `<div contenteditable="true" style="border: 1px solid #ccc; padding: 10px; min-width: 200px; min-height: 50px; background: #f9fafb;">Ketik teks di sini...</div>`;
+    editorRef.current?.focus();
+    executeCommand('insertHTML', textBoxHtml);
+    showNotification('Text Box ditambahkan!', 'success');
+  };
+
+  const insertSignature = () => {
+    const signatureHtml = `<div style="border-top: 2px solid #000; width: 200px; padding-top: 5px; margin-top: 20px;"><span style="font-family: 'Comic Sans MS', cursive; font-size: 18px;">Tanda Tangan Digital</span></div>`;
+    editorRef.current?.focus();
+    executeCommand('insertHTML', signatureHtml);
+    showNotification('Signature line ditambahkan!', 'success');
+  };
+
   const togglePageBorder = () => {
     setPageBorderEnabled(!pageBorderEnabled);
     showNotification(pageBorderEnabled ? 'Page border dinonaktifkan' : 'Page border diaktifkan', 'info');
@@ -1487,39 +1522,10 @@ export default function App() {
 
   // --- Insert Tab Handlers ---
   const insertShapes = () => {
-    const shapeHtml = `<div class=\"shape-placeholder\" style=\"width: 100px; height: 100px; background: #3b82f6; border-radius: 8px; display: inline-block; margin: 10px;\"></div>`;
+    const shapeHtml = `<div class="shape-placeholder" style="width: 100px; height: 100px; background: #3b82f6; border-radius: 8px; display: inline-block; margin: 10px;"></div>`;
     editorRef.current?.focus();
     executeCommand('insertHTML', shapeHtml);
     showNotification('Shape ditambahkan! Klik dan edit sesuai kebutuhan.', 'success');
-  };
-
-  const insertIcon = () => {
-    const iconHtml = `<span style=\"font-size: 24px; display: inline-block; margin: 5px;\">⭐</span>`;
-    editorRef.current?.focus();
-    executeCommand('insertHTML', iconHtml);
-    showNotification('Icon ditambahkan!', 'success');
-  };
-
-  const insertQRCode = () => {
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.href)}`;
-    const qrHtml = `<img src="${qrUrl}" alt="QR Code" style="width: 150px; height: 150px;" />`;
-    editorRef.current?.focus();
-    executeCommand('insertHTML', qrHtml);
-    showNotification('QR Code ditambahkan!', 'success');
-  };
-
-  const insertTextBox = () => {
-    const textBoxHtml = `<div contenteditable="true" style="border: 1px solid #ccc; padding: 10px; min-width: 200px; min-height: 50px; background: #f9fafb;">Ketik teks di sini...</div>`;
-    editorRef.current?.focus();
-    executeCommand('insertHTML', textBoxHtml);
-    showNotification('Text Box ditambahkan!', 'success');
-  };
-
-  const insertSignature = () => {
-    const signatureHtml = `<div style="border-top: 2px solid #000; width: 200px; padding-top: 5px; margin-top: 20px;"><span style="font-family: 'Comic Sans MS', cursive; font-size: 18px;">Tanda Tangan Digital</span></div>`;
-    editorRef.current?.focus();
-    executeCommand('insertHTML', signatureHtml);
-    showNotification('Signature line ditambahkan!', 'success');
   };
 
   const insertPageBreak = () => {
