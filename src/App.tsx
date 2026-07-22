@@ -19,11 +19,11 @@ type Category = 'SOP' | 'Panduan' | 'Instruksi Kerja' | 'Safety' | 'Form & Templ
 const CATEGORIES: Category[] = ['SOP', 'Panduan', 'Instruksi Kerja', 'Safety', 'Form & Template'];
 
 const CATEGORY_COLORS: Record<Category, { bg: string; text: string; border: string; icon: string }> = {
-  SOP: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', icon: '📄' },
-  Panduan: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', icon: '📘' },
-  'Instruksi Kerja': { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', icon: '📝' },
-  Safety: { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200', icon: '⚠️' },
-  'Form & Template': { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', icon: '📑' },
+  SOP: { bg: 'bg-[#f1e9d8]', text: 'text-[#8a6a2c]', border: 'border-[#e4ddd0]', icon: '📄' },
+  Panduan: { bg: 'bg-[#eceee7]', text: 'text-[#5c6650]', border: 'border-[#e4ddd0]', icon: '📘' },
+  'Instruksi Kerja': { bg: 'bg-[#efeae1]', text: 'text-[#6b5f4f]', border: 'border-[#e4ddd0]', icon: '📝' },
+  Safety: { bg: 'bg-[#f2e6e0]', text: 'text-[#96543e]', border: 'border-[#e4ddd0]', icon: '⚠️' },
+  'Form & Template': { bg: 'bg-[#f1e9d8]', text: 'text-[#8a6a2c]', border: 'border-[#e4ddd0]', icon: '📑' },
 };
 
 // Seed Articles
@@ -529,7 +529,6 @@ export default function App() {
     setHistoryStack([newArticle.content]);
     setHistoryIndex(0);
 
-    setActiveRibbonTab('Home'); // Reset ribbon tab ke Home saat buat baru
     setIsEditing(true);
     showNotification('Dokumen baru dibuat. Mode edit aktif.', 'success');
   };
@@ -548,7 +547,6 @@ export default function App() {
     setHistoryStack([selectedArticle.content]);
     setHistoryIndex(0);
 
-    setActiveRibbonTab('Home'); // Reset ribbon tab ke Home saat mulai edit
     setIsEditing(true);
     showNotification('Mode edit aktif', 'info');
   };
@@ -1368,47 +1366,46 @@ export default function App() {
       )}
 
       {/* --- New Top Header Navigation --- */}
-      <header className="bg-[#243c5a] border-b border-[#314a6e] h-16 flex items-center justify-between px-6 sticky top-0 z-50 shadow-md print:hidden">
+      <header className="bg-[#faf8f4]/90 backdrop-blur-md border-b border-[#e4ddd0] h-16 flex items-center justify-between px-6 md:px-10 sticky top-0 z-50 print:hidden">
         {/* Logo */}
         <div className="flex items-center space-x-3">
-          <div className="bg-gradient-to-br from-orange-400 to-orange-600 p-1.5 rounded-lg text-white shadow-sm flex items-center justify-center">
-            {/* Custom SVG Factory Icon */}
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M17 18h1"/><path d="M12 18h1"/><path d="M7 18h1"/></svg>
+          <div className="h-8 w-8 rounded-full border border-[#22201c]/15 text-[#22201c] flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/></svg>
           </div>
-          <h1 className="text-xl font-bold text-white tracking-tight">Warehouse Knowledge Base</h1>
+          <h1 className="font-serif-display text-lg text-[#22201c] tracking-tight">Warehouse Knowledge Base</h1>
         </div>
 
         {/* Search & Actions */}
         <div className="flex items-center space-x-4">
           <div className="relative hidden md:block w-[280px]">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#7b93af]" />
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#a39a86]" />
             <input
               id="searchInput"
               type="text"
               placeholder="Cari SOP, panduan..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-[#1b2f47] text-white placeholder-[#7b93af] text-sm border border-[#314a6e] rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 shadow-inner"
+              className="w-full pl-9 pr-4 py-2 bg-white text-[#22201c] placeholder-[#a39a86] text-sm border border-[#e4ddd0] rounded-full focus:outline-none focus:ring-1 focus:ring-[#a8823d] focus:border-[#a8823d]"
             />
           </div>
 
           {isAdmin ? (
             <>
-              <div className="flex items-center space-x-2 bg-[#6b4c2a] border border-[#a67c52] rounded-lg py-1.5 px-3">
-                <Shield className="h-3.5 w-3.5 text-orange-400" />
-                <span className="text-xs font-bold text-orange-400">Admin Mode</span>
+              <div className="flex items-center space-x-2 bg-[#f1e9d8] border border-[#e4ddd0] rounded-full py-1.5 px-3">
+                <Shield className="h-3.5 w-3.5 text-[#a8823d]" />
+                <span className="text-xs font-semibold text-[#8a6a2c]">Admin Mode</span>
               </div>
               {isEditing ? (
                 <div className="flex items-center gap-3 mr-2">
-                  <span className="text-xs font-medium flex items-center text-slate-300">
+                  <span className="text-xs font-medium flex items-center text-[#78715f]">
                     {autosaveStatus === 'saving' && (
-                      <span className="flex items-center text-amber-300">
-                        <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping mr-1.5"></span>
+                      <span className="flex items-center text-[#a8823d]">
+                        <span className="h-2 w-2 rounded-full bg-[#a8823d] animate-ping mr-1.5"></span>
                         Menyimpan draf...
                       </span>
                     )}
                     {autosaveStatus === 'saved' && (
-                      <span className="text-emerald-400 flex items-center">
+                      <span className="text-[#5c6650] flex items-center">
                         <Check className="h-4 w-4 mr-1" />
                         Tersimpan
                       </span>
@@ -1422,7 +1419,7 @@ export default function App() {
                   </span>
                   <button
                     onClick={handleSaveAndClose}
-                    className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm py-2 px-4 rounded-lg shadow-md flex items-center space-x-1.5 transition-all"
+                    className="bg-[#22201c] hover:bg-[#3a362e] text-white font-semibold text-sm py-2 px-4 rounded-full flex items-center space-x-1.5 transition-colors"
                   >
                     <Check className="h-4 w-4" />
                     <span>Selesai &amp; Simpan</span>
@@ -1432,7 +1429,7 @@ export default function App() {
                 <button
                   id="newArticleBtn"
                   onClick={handleCreateNew}
-                  className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold text-sm py-2 px-4 rounded-lg shadow-md flex items-center space-x-1.5 transition-all"
+                  className="bg-[#22201c] hover:bg-[#3a362e] text-white font-semibold text-sm py-2 px-4 rounded-full flex items-center space-x-1.5 transition-colors"
                 >
                   <Plus className="h-4 w-4" />
                   <span>Tambah Artikel</span>
@@ -1440,7 +1437,7 @@ export default function App() {
               )}
               <button
                 onClick={handleLogout}
-                className="flex items-center space-x-2 border border-[#4a658a] hover:bg-[#314a6e] text-white text-sm font-semibold py-2 px-4 rounded-lg transition-colors"
+                className="flex items-center space-x-2 border border-[#e4ddd0] hover:bg-[#f1ece2] text-[#22201c] text-sm font-medium py-2 px-4 rounded-full transition-colors"
                 title="Keluar dari Admin"
               >
                 <LogOut className="h-4 w-4" />
@@ -1451,7 +1448,7 @@ export default function App() {
             <button
               id="loginBtn"
               onClick={() => setShowLoginModal(true)}
-              className="flex items-center space-x-1.5 border border-[#4a658a] hover:bg-[#314a6e] text-white text-sm font-semibold py-2 px-4 rounded-lg transition-colors"
+              className="flex items-center space-x-1.5 border border-[#e4ddd0] hover:bg-[#f1ece2] text-[#22201c] text-sm font-medium py-2 px-4 rounded-full transition-colors"
             >
               <Lock className="h-4 w-4" />
               <span>Login Admin</span>
@@ -1462,13 +1459,13 @@ export default function App() {
 
       {/* --- Navigation Tabs --- */}
       {!isEditing && (
-            <div className="bg-[#243c5a] px-6 flex items-end space-x-1 border-b border-[#314a6e] print:hidden overflow-x-auto custom-scrollbar">
+            <div className="bg-[#faf8f4] px-6 md:px-10 flex items-end space-x-1 border-b border-[#e4ddd0] print:hidden overflow-x-auto custom-scrollbar">
               <button
                 onClick={() => { setSelectedCategory('All'); setSelectedArticle(null); setIsEditing(false); }}
-                className={`flex items-center space-x-2 px-5 py-3 text-sm font-semibold transition-all border-t-4 whitespace-nowrap ${
+                className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-all border-b-2 whitespace-nowrap ${
                   selectedCategory === 'All' && !selectedArticle
-                    ? 'bg-[#314a6e] border-orange-500 text-white'
-                    : 'border-transparent text-[#94a9c6] hover:bg-[#2d4666] hover:text-white'
+                    ? 'border-[#22201c] text-[#22201c]'
+                    : 'border-transparent text-[#a39a86] hover:text-[#22201c]'
                 }`}
               >
                 <FileText className="h-4 w-4" />
@@ -1481,10 +1478,10 @@ export default function App() {
                   <button
                     key={cat}
                     onClick={() => { setSelectedCategory(cat); setSelectedArticle(null); setIsEditing(false); }}
-                    className={`flex items-center space-x-2 px-5 py-3 text-sm font-semibold transition-all border-t-4 whitespace-nowrap ${
+                    className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-all border-b-2 whitespace-nowrap ${
                       isCatSelected
-                        ? 'bg-[#314a6e] border-orange-500 text-white'
-                        : 'border-transparent text-[#94a9c6] hover:bg-[#2d4666] hover:text-white'
+                        ? 'border-[#22201c] text-[#22201c]'
+                        : 'border-transparent text-[#a39a86] hover:text-[#22201c]'
                     }`}
                   >
                     <span className="text-base">{colors.icon}</span>
@@ -1497,7 +1494,7 @@ export default function App() {
 
       {/* --- Main Structural Workspace Layout --- */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
-        <main className={`flex-1 flex flex-col min-w-0 bg-[#f4f7f9] ${isEditing ? 'p-0 overflow-hidden' : 'p-6 md:p-8 overflow-y-auto'}`}>
+        <main className={`flex-1 flex flex-col min-w-0 bg-[#faf8f4] ${isEditing ? 'p-0 overflow-hidden' : 'p-6 md:p-10 overflow-y-auto'}`}>
           
           {selectedArticle ? (
 
@@ -2010,45 +2007,45 @@ export default function App() {
             <div className="w-full max-w-6xl mx-auto" id="dashboardState">
               
               {/* Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
                 {/* Card 1: Total */}
-                <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 flex items-center space-x-4">
-                  <div className="bg-slate-100 p-3 rounded-lg text-slate-400">
-                    <FileText className="w-6 h-6" />
+                <div className="bg-white rounded-lg p-5 border border-[#e4ddd0] flex items-center space-x-4">
+                  <div className="p-2.5 rounded-full text-[#a39a86] border border-[#e4ddd0]">
+                    <FileText className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-black text-[#243c5a] leading-none">{articles.length}</h3>
-                    <p className="text-xs text-slate-500 font-medium mt-1">Total Dokumen</p>
+                    <h3 className="font-serif-display text-2xl text-[#22201c] leading-none">{articles.length}</h3>
+                    <p className="text-xs text-[#8a8272] font-medium mt-1.5">Total Dokumen</p>
                   </div>
                 </div>
                 {/* Card 2: SOP */}
-                <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 flex items-center space-x-4">
-                  <div className="bg-blue-50 p-3 rounded-lg text-blue-500">
-                    <CheckSquare className="w-6 h-6" />
+                <div className="bg-white rounded-lg p-5 border border-[#e4ddd0] flex items-center space-x-4">
+                  <div className="p-2.5 rounded-full text-[#a8823d] border border-[#e4ddd0]">
+                    <CheckSquare className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-black text-[#243c5a] leading-none">{articles.filter(a => a.category === 'SOP').length}</h3>
-                    <p className="text-xs text-slate-500 font-medium mt-1">SOP</p>
+                    <h3 className="font-serif-display text-2xl text-[#22201c] leading-none">{articles.filter(a => a.category === 'SOP').length}</h3>
+                    <p className="text-xs text-[#8a8272] font-medium mt-1.5">SOP</p>
                   </div>
                 </div>
                 {/* Card 3: Panduan */}
-                <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 flex items-center space-x-4">
-                  <div className="bg-blue-50 p-3 rounded-lg text-blue-400">
-                    <BookOpen className="w-6 h-6" />
+                <div className="bg-white rounded-lg p-5 border border-[#e4ddd0] flex items-center space-x-4">
+                  <div className="p-2.5 rounded-full text-[#5c6650] border border-[#e4ddd0]">
+                    <BookOpen className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-black text-[#243c5a] leading-none">{articles.filter(a => a.category === 'Panduan').length}</h3>
-                    <p className="text-xs text-slate-500 font-medium mt-1">Panduan</p>
+                    <h3 className="font-serif-display text-2xl text-[#22201c] leading-none">{articles.filter(a => a.category === 'Panduan').length}</h3>
+                    <p className="text-xs text-[#8a8272] font-medium mt-1.5">Panduan</p>
                   </div>
                 </div>
                 {/* Card 4: Safety */}
-                <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 flex items-center space-x-4">
-                  <div className="bg-rose-50 p-3 rounded-lg text-rose-500">
-                    <Shield className="w-6 h-6" />
+                <div className="bg-white rounded-lg p-5 border border-[#e4ddd0] flex items-center space-x-4">
+                  <div className="p-2.5 rounded-full text-[#96543e] border border-[#e4ddd0]">
+                    <Shield className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-black text-[#243c5a] leading-none">{articles.filter(a => a.category === 'Safety').length}</h3>
-                    <p className="text-xs text-slate-500 font-medium mt-1">Safety / K3</p>
+                    <h3 className="font-serif-display text-2xl text-[#22201c] leading-none">{articles.filter(a => a.category === 'Safety').length}</h3>
+                    <p className="text-xs text-[#8a8272] font-medium mt-1.5">Safety / K3</p>
                   </div>
                 </div>
               </div>
@@ -2056,9 +2053,9 @@ export default function App() {
               {/* Grid of Articles */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredArticles.length === 0 ? (
-                  <div className="col-span-full text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300">
-                    <div className="h-16 w-16 mx-auto rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-3xl mb-4">📂</div>
-                    <p className="text-slate-500 font-medium">Tidak ada dokumen ditemukan</p>
+                  <div className="col-span-full text-center py-16 bg-white rounded-lg border border-dashed border-[#e4ddd0]">
+                    <div className="h-16 w-16 mx-auto rounded-full bg-[#f1ece2] text-[#a39a86] flex items-center justify-center text-3xl mb-4">📂</div>
+                    <p className="text-[#8a8272] font-medium">Tidak ada dokumen ditemukan</p>
                   </div>
                 ) : (
                filteredArticles.map(art => {
@@ -2067,36 +2064,36 @@ export default function App() {
                    <div 
                      key={art.id} 
                      onClick={() => setSelectedArticle(art)}
-                     className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col transition-all hover:shadow-md hover:-translate-y-1 cursor-pointer group"
+                     className="bg-white rounded-lg border border-[#e4ddd0] overflow-hidden flex flex-col transition-all hover:shadow-[0_8px_24px_rgba(34,32,28,0.06)] hover:-translate-y-0.5 cursor-pointer group"
                    >
                      {/* Top Banner Area */}
-                     <div className="bg-[#243c5a] h-32 relative flex items-center justify-center">
-                       <span className={`absolute top-3 left-3 text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${colors.bg} ${colors.text}`}>
+                     <div className="bg-[#f1ece2] h-28 relative flex items-center justify-center border-b border-[#e4ddd0]">
+                       <span className={`absolute top-3 left-3 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${colors.bg} ${colors.text}`}>
                          {art.category}
                        </span>
-                       <div className="text-4xl opacity-50 group-hover:scale-110 group-hover:opacity-100 transition-all">
+                       <div className="text-3xl opacity-60 grayscale group-hover:scale-110 group-hover:opacity-100 group-hover:grayscale-0 transition-all">
                          {colors.icon}
                        </div>
                        {art.thumbnail && (
-                         <img src={art.thumbnail} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-overlay pointer-events-none" />
+                         <img src={art.thumbnail} alt="" className="absolute inset-0 w-full h-full object-cover opacity-25 pointer-events-none" />
                        )}
                      </div>
                      
                      {/* Content Area */}
                      <div className="p-5 flex-1 flex flex-col">
                        {/* Hapus onClick dari h4, ganti dengan group-hover agar warna berubah saat kartu di-hover */}
-                       <h4 className="text-base font-bold text-[#243c5a] mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">
+                       <h4 className="font-serif-display text-base text-[#22201c] mb-2 group-hover:text-[#a8823d] transition-colors line-clamp-2">
                          {art.title}
                        </h4>
-                       <p className="text-xs text-slate-500 mb-4 flex-1 line-clamp-2">
+                       <p className="text-xs text-[#8a8272] mb-4 flex-1 line-clamp-2">
                          {art.desc || 'Tidak ada deskripsi tersedia.'}
                        </p>
-                       <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium pt-4 border-t border-slate-100">
+                       <div className="flex items-center justify-between text-[10px] text-[#a39a86] font-medium pt-4 border-t border-[#e4ddd0]">
                          <div className="flex items-center space-x-1">
                            <Clock className="w-3.5 h-3.5" />
                            <span>{art.date}</span>
                          </div>
-                         <div className="flex items-center space-x-1 text-orange-500">
+                         <div className="flex items-center space-x-1 text-[#a8823d]">
                            <Edit2 className="w-3.5 h-3.5" />
                            <span>{art.author}</span>
                          </div>
@@ -2104,17 +2101,17 @@ export default function App() {
                        
                        {/* Admin Actions - e.stopPropagation() tetap dipertahankan agar tidak memicu klik kartu */}
                        {isAdmin && (
-                         <div className="flex items-center space-x-2 mt-4 pt-3 border-t border-slate-100">
+                         <div className="flex items-center space-x-2 mt-4 pt-3 border-t border-[#e4ddd0]">
                            <button 
                              onClick={(e) => { e.stopPropagation(); setSelectedArticle(art); setIsEditing(true); }}
-                             className="flex-1 bg-orange-500 hover:bg-orange-600 text-white text-[11px] font-bold py-1.5 px-3 rounded-lg flex items-center justify-center space-x-1.5 transition-colors"
+                             className="flex-1 bg-[#22201c] hover:bg-[#3a362e] text-white text-[11px] font-semibold py-1.5 px-3 rounded-full flex items-center justify-center space-x-1.5 transition-colors"
                            >
                              <Edit2 className="w-3 h-3" />
                              <span>Edit</span>
                            </button>
                            <button 
                              onClick={(e) => { e.stopPropagation(); handleDeleteArticle(art.id); }}
-                             className="flex-1 bg-rose-500 hover:bg-rose-600 text-white text-[11px] font-bold py-1.5 px-3 rounded-lg flex items-center justify-center space-x-1.5 transition-colors"
+                             className="flex-1 bg-white border border-[#e4ddd0] hover:bg-[#f2e6e0] text-[#96543e] text-[11px] font-semibold py-1.5 px-3 rounded-full flex items-center justify-center space-x-1.5 transition-colors"
                            >
                              <Trash2 className="w-3 h-3" />
                              <span>Hapus</span>

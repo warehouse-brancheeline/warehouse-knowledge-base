@@ -1,9 +1,24 @@
 @import "tailwindcss";
 
+:root {
+  --ink: #22201c;
+  --stone: #f7f4ef;
+  --stone-dim: #efeae1;
+  --hairline: #e4ddd0;
+  --bronze: #a8823d;
+  --bronze-dim: #f1e9d8;
+}
+
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-800 antialiased selection:bg-indigo-100 selection:text-indigo-900;
+    @apply antialiased selection:bg-[#f1e9d8] selection:text-[#22201c];
+    background-color: var(--stone);
+    color: var(--ink);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  .font-serif-display {
+    font-family: 'Fraunces', Georgia, serif;
   }
 }
 
@@ -14,27 +29,41 @@
 }
 
 .editor-content h1 {
-  @apply text-3xl font-extrabold text-slate-900 mt-6 mb-3 tracking-tight border-b border-slate-100 pb-2;
+  @apply text-3xl mt-6 mb-3 tracking-tight border-b pb-2;
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 500;
+  color: var(--ink);
+  border-color: var(--hairline);
 }
 
 .editor-content h2 {
-  @apply text-2xl font-bold text-slate-800 mt-5 mb-2.5 tracking-tight;
+  @apply text-2xl mt-5 mb-2.5 tracking-tight;
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 500;
+  color: var(--ink);
 }
 
 .editor-content h3 {
-  @apply text-xl font-semibold text-slate-800 mt-4 mb-2;
+  @apply text-xl font-semibold mt-4 mb-2;
+  color: var(--ink);
 }
 
 .editor-content p {
-  @apply text-base text-slate-700 leading-relaxed mb-4;
+  @apply text-base text-stone-700 leading-relaxed mb-4;
 }
 
 .editor-content a {
-  @apply text-indigo-600 underline hover:text-indigo-800 transition-colors cursor-pointer;
+  @apply underline transition-colors cursor-pointer;
+  color: var(--bronze);
+}
+.editor-content a:hover {
+  color: var(--ink);
 }
 
 .editor-content blockquote {
-  @apply border-l-4 border-indigo-500 bg-indigo-50/50 px-4 py-2.5 my-4 rounded-r italic text-slate-700;
+  @apply px-4 py-2.5 my-4 rounded-r italic text-stone-700 border-l-2;
+  border-color: var(--bronze);
+  background-color: var(--bronze-dim);
 }
 
 /* Lists styling */
@@ -52,19 +81,23 @@
 
 /* Table styling - Confluence style */
 .editor-content table {
-  @apply w-full border-collapse border border-slate-200 my-6 text-sm overflow-hidden rounded-lg shadow-sm;
+  @apply w-full border-collapse my-6 text-sm overflow-hidden rounded-lg;
+  border: 1px solid var(--hairline);
 }
 
 .editor-content th {
-  @apply bg-slate-100 border border-slate-200 px-4 py-2.5 text-left font-semibold text-slate-700;
+  @apply px-4 py-2.5 text-left font-semibold text-stone-700;
+  background-color: var(--stone-dim);
+  border: 1px solid var(--hairline);
 }
 
 .editor-content td {
-  @apply border border-slate-200 px-4 py-2 text-slate-600;
+  @apply px-4 py-2 text-stone-600;
+  border: 1px solid var(--hairline);
 }
 
 .editor-content tr:nth-child(even) {
-  @apply bg-slate-50/50;
+  background-color: rgba(0,0,0,0.012);
 }
 
 /* Custom Checklist */
@@ -73,7 +106,9 @@
 }
 
 .editor-content .checklist-item input[type="checkbox"] {
-  @apply h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 mt-1 cursor-pointer;
+  @apply h-4 w-4 rounded mt-1 cursor-pointer;
+  accent-color: var(--bronze);
+  border-color: var(--hairline);
 }
 
 .editor-content .checklist-item span {
@@ -154,7 +189,8 @@
 
 /* Document Page layout (Google Docs / Word style) */
 .document-page {
-  @apply bg-white shadow-[0_4px_16px_rgba(0,0,0,0.06)] border border-slate-100 mx-auto px-16 py-14 w-full rounded-md;
+  @apply bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)] mx-auto px-16 py-14 w-full rounded-sm;
+  border: 1px solid var(--hairline);
   min-height: auto;
   height: auto;
 }
@@ -180,7 +216,8 @@
 
 /* Editor Toolbar Floating Bar (Word like ribbon) */
 .formatting-ribbon {
-  @apply border border-slate-200 bg-white/95 backdrop-blur-md rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.04)] sticky top-12 z-30 transition-all duration-200;
+  @apply bg-white/95 backdrop-blur-md rounded-lg shadow-[0_1px_2px_rgba(0,0,0,0.04)] sticky top-12 z-30 transition-all duration-200;
+  border: 1px solid var(--hairline);
 }
 
 /* Floating Media Toolbar for Images & Videos */
