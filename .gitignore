@@ -1,53 +1,47 @@
-```gitignore
-# Dependencies
-node_modules/
-
-# Build outputs
+```
+# Build artifacts
 dist/
 build/
-target/
+*.js
+*.css
+
+# Dependencies
+node_modules/
 
 # Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-env/
-venv/
-.venv/
-.ENV
-.ENV.local
 
-# Logs
-*.log
-
-# Environment variables
+# Environment
 .env
 .env.local
 *.env.*
 
-# Coverage reports
-coverage/
-htmlcov/
-.coverage
-
-# Testing
-.pytest_cache/
-.mypy_cache/
-
-# IDE
+# Editors
 .vscode/
 .idea/
 *.swp
 *.swo
+
+# Logs
+*.log
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Temp files
 *.tmp
+*.temp
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Compressed files
+# Compression
 *.zip
 *.gz
 *.tar

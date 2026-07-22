@@ -529,6 +529,7 @@ export default function App() {
     setHistoryStack([newArticle.content]);
     setHistoryIndex(0);
 
+    setActiveRibbonTab('Home'); // Reset ribbon tab ke Home saat buat baru
     setIsEditing(true);
     showNotification('Dokumen baru dibuat. Mode edit aktif.', 'success');
   };
@@ -547,6 +548,7 @@ export default function App() {
     setHistoryStack([selectedArticle.content]);
     setHistoryIndex(0);
 
+    setActiveRibbonTab('Home'); // Reset ribbon tab ke Home saat mulai edit
     setIsEditing(true);
     showNotification('Mode edit aktif', 'info');
   };
