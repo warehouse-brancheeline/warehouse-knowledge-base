@@ -319,6 +319,19 @@ export default function App() {
   const [imageObjectFit, setImageObjectFit] = useState('cover');
   const [imageCaption, setImageCaption] = useState('');
 
+  // Line Spacing state (in pt, 0-1584 like Word)
+  const [lineSpacingPt, setLineSpacingPt] = useState(12);
+  const [showLineSpacingDropdown, setShowLineSpacingDropdown] = useState(false);
+
+  // Indent state (in pt)
+  const [leftIndentPt, setLeftIndentPt] = useState(0);
+  const [rightIndentPt, setRightIndentPt] = useState(0);
+
+  // Paragraph Spacing state (in pt, 0-1584 like Word)
+  const [spacingBefore, setSpacingBefore] = useState(0);
+  const [spacingAfter, setSpacingAfter] = useState(0);
+  const [showSpacingDropdown, setShowSpacingDropdown] = useState(false);
+
   // --- Initialize App ---
   useEffect(() => {
     // Load articles from localStorage
@@ -743,6 +756,140 @@ export default function App() {
       setEditorContent(updatedHTML);
       pushToHistory(updatedHTML);
     }
+  };
+
+  // --- Line Spacing Handler ---
+  const handleLineSpacing = (pt: number) => {
+    setLineSpacingPt(pt);
+    // Convert pt to line-height (1pt ≈ 1.33px, but we use direct pixel value for consistency)
+    const lineHeight = `${pt}px`;
+    if (editorRef.current) {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const selectedText = range.toString();
+        if (selectedText) {
+          // Wrap selected text in a span with line-height
+          const span = document.createElement('span');
+          span.style.lineHeight = lineHeight;
+          try {
+            range.surroundContents(span);
+          } catch (e) {
+            // If surrounding fails, use execCommand for paragraph
+            document.execCommand('formatBlock', false, 'p');
+            const p = document.querySelector('p[style*="line-height"]') || document.querySelector('p');
+            if (p) {
+              (p as HTMLElement).style.lineHeight = lineHeight;
+            }
+          }
+        } else {
+          // Apply to current paragraph
+          document.execCommand('formatBlock', false, 'p');
+          const focusNode = selection.focusNode;
+          const paragraph = focusNode?.nodeType === 3 ? focusNode.parentElement : focusNode as HTMLElement;
+          if (paragraph) {
+            paragraph.style.lineHeight = lineHeight;
+          }
+        }
+        pushToHistory(editorRef.current.innerHTML);
+      }
+    }
+    setShowLineSpacingDropdown(false);
+  };
+
+  // --- Indent Handlers ---
+  const handleIndentIncrease = () => {
+    const newIndent = Math.min(leftIndentPt + 36, 720); // Max 720pt (like Word ~25cm)
+    setLeftIndentPt(newIndent);
+    if (editorRef.current) {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        let paragraph = range.startContainer.nodeType === 3 
+          ? (range.startContainer as Text).parentElement 
+          : (range.startContainer as HTMLElement);
+        
+        // Find closest block element
+        while (paragraph && !['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(paragraph.tagName)) {
+          paragraph = paragraph.parentElement;
+        }
+        
+        if (paragraph) {
+          paragraph.style.paddingLeft = `${newIndent}px`;
+          pushToHistory(editorRef.current.innerHTML);
+        }
+      }
+    }
+  };
+
+  const handleIndentDecrease = () => {
+    const newIndent = Math.max(leftIndentPt - 36, 0);
+    setLeftIndentPt(newIndent);
+    if (editorRef.current) {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        let paragraph = range.startContainer.nodeType === 3 
+          ? (range.startContainer as Text).parentElement 
+          : (range.startContainer as HTMLElement);
+        
+        while (paragraph && !['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(paragraph.tagName)) {
+          paragraph = paragraph.parentElement;
+        }
+        
+        if (paragraph) {
+          paragraph.style.paddingLeft = `${newIndent}px`;
+          pushToHistory(editorRef.current.innerHTML);
+        }
+      }
+    }
+  };
+
+  // --- Paragraph Spacing Handlers ---
+  const handleSpacingBefore = (pt: number) => {
+    setSpacingBefore(pt);
+    if (editorRef.current) {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        let paragraph = range.startContainer.nodeType === 3 
+          ? (range.startContainer as Text).parentElement 
+          : (range.startContainer as HTMLElement);
+        
+        while (paragraph && !['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(paragraph.tagName)) {
+          paragraph = paragraph.parentElement;
+        }
+        
+        if (paragraph) {
+          paragraph.style.marginTop = `${pt}px`;
+          pushToHistory(editorRef.current.innerHTML);
+        }
+      }
+    }
+    setShowSpacingDropdown(false);
+  };
+
+  const handleSpacingAfter = (pt: number) => {
+    setSpacingAfter(pt);
+    if (editorRef.current) {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        let paragraph = range.startContainer.nodeType === 3 
+          ? (range.startContainer as Text).parentElement 
+          : (range.startContainer as HTMLElement);
+        
+        while (paragraph && !['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(paragraph.tagName)) {
+          paragraph = paragraph.parentElement;
+        }
+        
+        if (paragraph) {
+          paragraph.style.marginBottom = `${pt}px`;
+          pushToHistory(editorRef.current.innerHTML);
+        }
+      }
+    }
+    setShowSpacingDropdown(false);
   };
 
   // Check interactive format states
@@ -1194,6 +1341,17 @@ export default function App() {
     }
   };
 
+  // --- Cut Handler ---
+  const handleCut = () => {
+    document.execCommand('cut');
+  };
+
+  // --- Copy Handler ---
+  const handleCopy = () => {
+    document.execCommand('copy');
+    showNotification('Konten berhasil disalin!', 'success');
+  };
+
   // --- Interactive Checklist Clicking in Reading/Viewer Mode ---
   const handleViewerClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
@@ -1598,11 +1756,11 @@ export default function App() {
                           {/* Clipboard Group */}
                           <div className="flex items-center gap-1.5 border-r border-slate-200 pr-3 shrink-0">
                              <div className="flex flex-col gap-1">
-                               <button className="flex flex-col items-center justify-center p-1 hover:bg-slate-100 rounded" title="Paste (Ctrl+V)"><ClipboardPaste className="h-6 w-6 text-slate-500 mb-1"/><span className="text-[10px]">Paste</span></button>
+                               <button onClick={handlePaste} className="flex flex-col items-center justify-center p-1 hover:bg-slate-100 rounded" title="Paste (Ctrl+V)"><ClipboardPaste className="h-6 w-6 text-slate-500 mb-1"/><span className="text-[10px]">Paste</span></button>
                              </div>
                              <div className="flex flex-col gap-1 justify-center">
-                               <button className="flex items-center gap-1 p-1 hover:bg-slate-100 rounded" title="Cut (Ctrl+X)"><Scissors className="h-4 w-4 text-slate-500"/><span className="text-[10px]">Cut</span></button>
-                               <button className="flex items-center gap-1 p-1 hover:bg-slate-100 rounded" title="Copy (Ctrl+C)"><CopyIcon className="h-4 w-4 text-slate-500"/><span className="text-[10px]">Copy</span></button>
+                               <button onClick={handleCut} className="flex items-center gap-1 p-1 hover:bg-slate-100 rounded" title="Cut (Ctrl+X)"><Scissors className="h-4 w-4 text-slate-500"/><span className="text-[10px]">Cut</span></button>
+                               <button onClick={handleCopy} className="flex items-center gap-1 p-1 hover:bg-slate-100 rounded" title="Copy (Ctrl+C)"><CopyIcon className="h-4 w-4 text-slate-500"/><span className="text-[10px]">Copy</span></button>
                              </div>
                           </div>
 
@@ -1701,8 +1859,8 @@ export default function App() {
                                <button onClick={() => executeCommand('insertOrderedList')} className="p-1.5 hover:bg-slate-100 rounded"><ListOrdered className="h-3.5 w-3.5" /></button>
                                <button onClick={insertChecklist} className="p-1.5 hover:bg-slate-100 rounded" title="Checklist"><CheckSquare className="h-3.5 w-3.5" /></button>
                                <div className="w-px h-4 bg-slate-200 mx-1"></div>
-                               <button onClick={() => executeCommand('outdent')} className="p-1.5 hover:bg-slate-100 rounded" title="Decrease Indent"><Outdent className="h-3.5 w-3.5" /></button>
-                               <button onClick={() => executeCommand('indent')} className="p-1.5 hover:bg-slate-100 rounded" title="Increase Indent"><Indent className="h-3.5 w-3.5" /></button>
+                               <button onClick={handleIndentDecrease} className="p-1.5 hover:bg-slate-100 rounded" title="Decrease Indent"><Outdent className="h-3.5 w-3.5" /></button>
+                               <button onClick={handleIndentIncrease} className="p-1.5 hover:bg-slate-100 rounded" title="Increase Indent"><Indent className="h-3.5 w-3.5" /></button>
                             </div>
                             <div className="flex items-center gap-0.5 mt-1">
                                <button onClick={() => executeCommand('justifyLeft')} className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-blue-600"><AlignLeft className="h-3.5 w-3.5" /></button>
@@ -1710,7 +1868,96 @@ export default function App() {
                                <button onClick={() => executeCommand('justifyRight')} className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-blue-600"><AlignRight className="h-3.5 w-3.5" /></button>
                                <button onClick={() => executeCommand('justifyFull')} className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-blue-600"><AlignJustify className="h-3.5 w-3.5" /></button>
                                <div className="w-px h-4 bg-slate-200 mx-1"></div>
-                               <button className="p-1.5 hover:bg-slate-100 rounded" title="Line Spacing"><Baseline className="h-3.5 w-3.5" /></button>
+                               {/* Line Spacing with dropdown */}
+                               <div className="relative">
+                                 <button 
+                                   onClick={(e) => {
+                                     const rect = e.currentTarget.getBoundingClientRect();
+                                     setPopoverCoords({ top: rect.bottom, left: rect.left });
+                                     setShowLineSpacingDropdown(!showLineSpacingDropdown);
+                                   }}
+                                   className="p-1.5 hover:bg-slate-100 rounded flex items-center" 
+                                   title="Line Spacing"
+                                 >
+                                   <Baseline className="h-3.5 w-3.5 mr-0.5" />
+                                   <ChevronDown className="h-3 w-3" />
+                                 </button>
+                                 {showLineSpacingDropdown && popoverCoords && createPortal(
+                                   <>
+                                     <div className="fixed inset-0 z-40 bg-transparent" onClick={() => { setShowLineSpacingDropdown(false); setPopoverCoords(null); }} />
+                                     <div
+                                       className="fixed bg-white border border-slate-200 rounded p-2 shadow-xl z-50 min-w-[150px]"
+                                       style={{ top: `${popoverCoords.top}px`, left: `${popoverCoords.left}px` }}
+                                     >
+                                       <div className="text-[10px] font-semibold text-slate-500 mb-2 px-2">Line Spacing (pt)</div>
+                                       {[8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48].map((pt) => (
+                                         <button
+                                           key={pt}
+                                           onClick={() => handleLineSpacing(pt)}
+                                           className={`w-full text-left px-3 py-1.5 text-xs rounded hover:bg-slate-100 ${lineSpacingPt === pt ? 'bg-blue-50 text-blue-700' : 'text-slate-700'}`}
+                                         >
+                                           {pt} pt
+                                         </button>
+                                       ))}
+                                       <div className="border-t border-slate-200 my-1"></div>
+                                       <div className="px-2 py-1 text-[10px] text-slate-400">Max: 1584 pt</div>
+                                     </div>
+                                   </>,
+                                   document.body
+                                 )}
+                               </div>
+                               {/* Paragraph Spacing Button */}
+                               <div className="relative">
+                                 <button 
+                                   onClick={(e) => {
+                                     const rect = e.currentTarget.getBoundingClientRect();
+                                     setPopoverCoords({ top: rect.bottom, left: rect.left });
+                                     setShowSpacingDropdown(!showSpacingDropdown);
+                                   }}
+                                   className="p-1.5 hover:bg-slate-100 rounded flex items-center" 
+                                   title="Paragraph Spacing"
+                                 >
+                                   <ArrowUp className="h-3.5 w-3.5 mr-0.5 rotate-45" />
+                                   <ChevronDown className="h-3 w-3" />
+                                 </button>
+                                 {showSpacingDropdown && popoverCoords && createPortal(
+                                   <>
+                                     <div className="fixed inset-0 z-40 bg-transparent" onClick={() => { setShowSpacingDropdown(false); setPopoverCoords(null); }} />
+                                     <div
+                                       className="fixed bg-white border border-slate-200 rounded p-3 shadow-xl z-50 min-w-[180px]"
+                                       style={{ top: `${popoverCoords.top}px`, left: `${popoverCoords.left}px` }}
+                                     >
+                                       <div className="text-[10px] font-semibold text-slate-500 mb-2">Spacing Before</div>
+                                       <div className="flex flex-wrap gap-1 mb-3">
+                                         {[0, 6, 12, 18, 24, 30, 36].map((pt) => (
+                                           <button
+                                             key={pt}
+                                             onClick={() => handleSpacingBefore(pt)}
+                                             className={`px-2 py-1 text-xs rounded border ${spacingBefore === pt ? 'bg-blue-50 border-blue-500 text-blue-700' : 'border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+                                           >
+                                             {pt} pt
+                                           </button>
+                                         ))}
+                                       </div>
+                                       <div className="text-[10px] font-semibold text-slate-500 mb-2">Spacing After</div>
+                                       <div className="flex flex-wrap gap-1">
+                                         {[0, 6, 12, 18, 24, 30, 36].map((pt) => (
+                                           <button
+                                             key={pt}
+                                             onClick={() => handleSpacingAfter(pt)}
+                                             className={`px-2 py-1 text-xs rounded border ${spacingAfter === pt ? 'bg-blue-50 border-blue-500 text-blue-700' : 'border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+                                           >
+                                             {pt} pt
+                                           </button>
+                                         ))}
+                                       </div>
+                                       <div className="border-t border-slate-200 my-2"></div>
+                                       <div className="px-1 py-1 text-[10px] text-slate-400">Range: 0-1584 pt</div>
+                                     </div>
+                                   </>,
+                                   document.body
+                                 )}
+                               </div>
                             </div>
                           </div>
                           
