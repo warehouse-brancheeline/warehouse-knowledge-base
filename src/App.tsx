@@ -890,8 +890,12 @@ export default function App() {
           setImageCaption(capEl ? capEl.textContent || '' : '');
         }
       } else {
-        // Clicked on non-image media (e.g., video) - deselect but keep current tab
-        setSelectedImageElement(null);
+        // Clicked on non-image media (e.g., video) - still selectable for alignment/layout,
+        // just skip the image-only property parsing (rotate, filters, border, etc.)
+        setSelectedImageElement(mediaWrapper);
+        setActiveRibbonTab('Format');
+        let w = mediaWrapper.style.width || '60%';
+        setImageWidth(w);
       }
 
       // Check for button action inside media toolbar
