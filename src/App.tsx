@@ -794,6 +794,251 @@ export default function App() {
     }
   };
 
+  // --- List Level Management (Microsoft Word-like behavior) ---
+  
+  // Get bullet symbol based on level for unordered list
+  const getBulletSymbol = (level: number): string => {
+    const pattern = ['•', '○', '▪'];
+    return pattern[(level - 1) % pattern.length];
+  };
+
+  // Get numbering style based on level for ordered list
+  const getNumberingStyle = (level: number): string => {
+    const patterns = ['decimal', 'lower-alpha', 'lower-roman', 'decimal', 'lower-alpha', 'lower-roman'];
+    return patterns[(level - 1) % patterns.length];
+  };
+
+  // Get current list item and its level
+  const getCurrentListItem = (): { li: HTMLLIElement | null; level: number; isOrdered: boolean } => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      return { li: null, level: 1, isOrdered: false };
+    }
+    
+    const node = selection.anchorNode;
+    let li: HTMLElement | null = node?.nodeType === 3 ? (node as Text).parentElement : (node as HTMLElement);
+    
+    while (li && li.tagName !== 'LI') {
+      li = li.parentElement;
+    }
+    
+    if (!li) {
+      return { li: null, level: 1, isOrdered: false };
+    }
+    
+    const liEl = li as HTMLLIElement;
+    
+    // Check if inside ul or ol
+    let parentList = liEl.parentElement;
+    let isOrdered = parentList?.tagName === 'OL';
+    let level = 1;
+    
+    // Count nesting levels
+    while (parentList && (parentList.tagName === 'UL' || parentList.tagName === 'OL')) {
+      const grandParent = parentList.parentElement;
+      if (grandParent?.tagName === 'LI') {
+        level++;
+        parentList = grandParent.parentElement;
+      } else {
+        break;
+      }
+    }
+    
+    return { li: liEl, level, isOrdered };
+  };
+
+  // Demote list item (increase indent level) - Tab
+  const demoteListItem = () => {
+    const { li, level, isOrdered } = getCurrentListItem();
+    if (!li) return false;
+    
+    // Max level 5
+    if (level >= 5) return true;
+    
+    const prevLi = li.previousElementSibling as HTMLLIElement;
+    if (!prevLi || prevLi.tagName !== 'LI') {
+      // No previous sibling at same level, can't demote
+      return true;
+    }
+    
+    // Create or find the nested list in previous li
+    let nestedList = prevLi.querySelector('ul, ol');
+    if (!nestedList) {
+      nestedList = document.createElement(isOrdered ? 'ol' : 'ul');
+      prevLi.appendChild(nestedList);
+    }
+    
+    // Move current li to the nested list
+    nestedList.appendChild(li);
+    
+    // Apply proper styling based on new level
+    applyListStyling(li, level + 1, isOrdered);
+    
+    saveEditorState();
+    return true;
+  };
+
+  // Promote list item (decrease indent level) - Shift+Tab or Backspace at start
+  const promoteListItem = (liElement?: HTMLLIElement): boolean => {
+    const { li, level, isOrdered } = getCurrentListItem();
+    const targetLi = liElement || li;
+    
+    if (!targetLi) return false;
+    if (level <= 1) {
+      // At root level, convert to paragraph
+      convertToParagraph(targetLi);
+      return true;
+    }
+    
+    // Find parent list
+    const parentList = targetLi.parentElement;
+    if (!parentList || (parentList.tagName !== 'UL' && parentList.tagName !== 'OL')) {
+      return false;
+    }
+    
+    // Find the grandparent list item
+    const grandParentLi = parentList.parentElement?.closest('li') as HTMLLIElement;
+    if (!grandParentLi) {
+      return false;
+    }
+    
+    // Move targetLi after the parent list
+    parentList.after(targetLi);
+    
+    // Clean up empty lists
+    if (parentList.children.length === 0) {
+      parentList.remove();
+    }
+    
+    // Apply proper styling based on new level
+    applyListStyling(targetLi, level - 1, isOrdered);
+    
+    saveEditorState();
+    return true;
+  };
+
+  // Convert list item to paragraph
+  const convertToParagraph = (liElement: HTMLLIElement) => {
+    const text = liElement.textContent || '';
+    const p = document.createElement('p');
+    p.textContent = text;
+    liElement.replaceWith(p);
+    
+    // Move cursor to start of new paragraph
+    const range = document.createRange();
+    const sel = window.getSelection();
+    range.setStart(p, 0);
+    range.collapse(true);
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+    
+    saveEditorState();
+  };
+
+  // Apply styling to list item based on level
+  const applyListStyling = (li: HTMLLIElement, level: number, isOrdered: boolean) => {
+    if (isOrdered) {
+      // For ordered lists, we rely on CSS list-style-type
+      // The nesting handles the level automatically
+    } else {
+      // For unordered lists, we need custom bullets
+      // This is handled by CSS based on nesting level
+    }
+  };
+
+  // Handle Enter key in list
+  const handleEnterInList = (): boolean => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return false;
+    
+    const { li, level } = getCurrentListItem();
+    if (!li) return false;
+    
+    // Check if list item is empty
+    const textContent = li.textContent?.trim() || '';
+    if (textContent === '') {
+      // Empty list item - exit list
+      convertToParagraph(li);
+      return true;
+    }
+    
+    // Check if cursor is at end of line
+    const range = selection.getRangeAt(0);
+    const isAtEnd = range.endOffset === (range.endContainer as Text)?.length || 
+                    range.endContainer === li && range.endOffset === li.childNodes.length;
+    
+    if (isAtEnd && textContent !== '') {
+      // Normal enter - create new list item at same level
+      // Default browser behavior handles this
+      return false;
+    }
+    
+    return false;
+  };
+
+  // Handle Backspace at start of list item
+  const handleBackspaceInList = (): boolean => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return false;
+    
+    const { li, level } = getCurrentListItem();
+    if (!li) return false;
+    
+    const range = selection.getRangeAt(0);
+    
+    // Check if cursor is at the very start of the list item
+    const isAtStart = range.startOffset === 0 && 
+                      (range.startContainer === li || 
+                       (range.startContainer.nodeType === 3 && 
+                        (range.startContainer as Text).parentNode === li));
+    
+    if (isAtStart) {
+      if (level > 1) {
+        // Promote one level
+        promoteListItem(li);
+        return true;
+      } else {
+        // At root level - convert to paragraph
+        convertToParagraph(li);
+        return true;
+      }
+    }
+    
+    return false;
+  };
+
+  // Main keydown handler for list behavior
+  const handleListKeyDown = (e: React.KeyboardEvent<HTMLDivElement>): void => {
+    if (!isEditing) return;
+    
+    const { li } = getCurrentListItem();
+    if (!li) return; // Not in a list item
+    
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        // Shift+Tab = Promote
+        promoteListItem();
+      } else {
+        // Tab = Demote
+        demoteListItem();
+      }
+    } else if (e.key === 'Enter') {
+      // Check if current list item is empty - exit list on Enter
+      const textContent = li.textContent?.trim() || '';
+      if (textContent === '') {
+        e.preventDefault();
+        convertToParagraph(li);
+      }
+      // Otherwise let default behavior create new list item
+    } else if (e.key === 'Backspace') {
+      const handled = handleBackspaceInList();
+      if (handled) {
+        e.preventDefault();
+      }
+    }
+  };
+
   // --- Line Spacing Handler ---
   const handleLineSpacing = (pt: number) => {
     setLineSpacingPt(pt);
@@ -2557,6 +2802,7 @@ export default function App() {
                   ref={editorRef}
                   id="contentEditor"
                   contentEditable={isEditing}
+                  onKeyDown={handleListKeyDown}
                   onInput={(e) => {
                     const html = (e.target as HTMLDivElement).innerHTML;
                     setEditorContent(html);
