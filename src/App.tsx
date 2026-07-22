@@ -264,8 +264,6 @@ export default function App() {
   } | null>(null);
 
   // Color Pickers
-  const [showTextColorPicker, setShowTextColorPicker] = useState(false);
-  const [showHighlightColorPicker, setShowHighlightColorPicker] = useState(false);
 
   // Contextual Image Formatting states
   const [selectedImageElement, setSelectedImageElement] = useState<HTMLElement | null>(null);
@@ -1646,21 +1644,51 @@ export default function App() {
                                
                                {/* Colors */}
                                <div className="relative flex items-center gap-0.5">
-                                 <button onClick={() => { setShowTextColorPicker(!showTextColorPicker); setShowHighlightColorPicker(false); }} className="p-1.5 hover:bg-slate-100 rounded flex items-center" title="Text Color"><Palette className="h-3.5 w-3.5 mr-0.5 text-blue-600" /><ChevronDown className="h-3 w-3" /></button>
-                                 {showTextColorPicker && (
-                                   <div className="absolute top-8 left-0 bg-white border border-slate-200 rounded p-2 shadow-xl grid grid-cols-5 gap-1 z-50">
-                                     {['#000000', '#334155', '#4f46e5', '#059669', '#dc2626', '#d97706', '#2563eb', '#7c3aed', '#db2777', '#4b5563'].map((color) => (
-                                       <button key={color} onClick={() => { executeCommand('foreColor', color); setShowTextColorPicker(false); }} className="h-4 w-4 rounded border border-slate-200" style={{ backgroundColor: color }} />
-                                     ))}
-                                   </div>
+                                 <button
+                                   type="button"
+                                   id="ribbon-btn-textColor"
+                                   onClick={(e) => {
+                                     const rect = e.currentTarget.getBoundingClientRect();
+                                     setPopoverCoords({ top: rect.bottom, left: rect.left });
+                                     setOpenImagePopover(openImagePopover === 'textColor' ? null : 'textColor');
+                                   }}
+                                   className="p-1.5 hover:bg-slate-100 rounded flex items-center" title="Text Color"><Palette className="h-3.5 w-3.5 mr-0.5 text-blue-600" /><ChevronDown className="h-3 w-3" /></button>
+                                 {openImagePopover === 'textColor' && popoverCoords && createPortal(
+                                   <>
+                                     <div className="fixed inset-0 z-40 bg-transparent" onClick={() => { setOpenImagePopover(null); setPopoverCoords(null); }} />
+                                     <div
+                                       className="fixed bg-white border border-slate-200 rounded p-2 shadow-xl grid grid-cols-5 gap-1 z-50"
+                                       style={{ top: `${popoverCoords.top}px`, left: `${popoverCoords.left}px` }}
+                                     >
+                                       {['#000000', '#334155', '#4f46e5', '#059669', '#dc2626', '#d97706', '#2563eb', '#7c3aed', '#db2777', '#4b5563'].map((color) => (
+                                         <button key={color} onClick={() => { executeCommand('foreColor', color); setOpenImagePopover(null); }} className="h-4 w-4 rounded border border-slate-200" style={{ backgroundColor: color }} />
+                                       ))}
+                                     </div>
+                                   </>,
+                                   document.body
                                  )}
-                                 <button onClick={() => { setShowHighlightColorPicker(!showHighlightColorPicker); setShowTextColorPicker(false); }} className="p-1.5 hover:bg-slate-100 rounded flex items-center" title="Highlight Color"><Highlighter className="h-3.5 w-3.5 mr-0.5 text-yellow-500" /><ChevronDown className="h-3 w-3" /></button>
-                                 {showHighlightColorPicker && (
-                                   <div className="absolute top-8 left-0 bg-white border border-slate-200 rounded p-2 shadow-xl grid grid-cols-5 gap-1 z-50">
-                                     {['transparent', '#fef08a', '#bbf7d0', '#bfdbfe', '#fbcfe8', '#fef3c7', '#c7d2fe', '#fed7aa', '#e9d5ff', '#ddd6fe'].map((color) => (
-                                       <button key={color} onClick={() => { executeCommand('hiliteColor', color); setShowHighlightColorPicker(false); }} className="h-4 w-4 rounded border border-slate-200" style={{ backgroundColor: color }} title={color === 'transparent' ? 'No Highlight' : color} />
-                                     ))}
-                                   </div>
+                                 <button
+                                   type="button"
+                                   id="ribbon-btn-highlightColor"
+                                   onClick={(e) => {
+                                     const rect = e.currentTarget.getBoundingClientRect();
+                                     setPopoverCoords({ top: rect.bottom, left: rect.left });
+                                     setOpenImagePopover(openImagePopover === 'highlightColor' ? null : 'highlightColor');
+                                   }}
+                                   className="p-1.5 hover:bg-slate-100 rounded flex items-center" title="Highlight Color"><Highlighter className="h-3.5 w-3.5 mr-0.5 text-yellow-500" /><ChevronDown className="h-3 w-3" /></button>
+                                 {openImagePopover === 'highlightColor' && popoverCoords && createPortal(
+                                   <>
+                                     <div className="fixed inset-0 z-40 bg-transparent" onClick={() => { setOpenImagePopover(null); setPopoverCoords(null); }} />
+                                     <div
+                                       className="fixed bg-white border border-slate-200 rounded p-2 shadow-xl grid grid-cols-5 gap-1 z-50"
+                                       style={{ top: `${popoverCoords.top}px`, left: `${popoverCoords.left}px` }}
+                                     >
+                                       {['transparent', '#fef08a', '#bbf7d0', '#bfdbfe', '#fbcfe8', '#fef3c7', '#c7d2fe', '#fed7aa', '#e9d5ff', '#ddd6fe'].map((color) => (
+                                         <button key={color} onClick={() => { executeCommand('hiliteColor', color); setOpenImagePopover(null); }} className="h-4 w-4 rounded border border-slate-200" style={{ backgroundColor: color }} title={color === 'transparent' ? 'No Highlight' : color} />
+                                       ))}
+                                     </div>
+                                   </>,
+                                   document.body
                                  )}
                                </div>
                             </div>
