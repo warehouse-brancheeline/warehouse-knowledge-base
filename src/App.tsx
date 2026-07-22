@@ -359,14 +359,12 @@ export default function App() {
     if (saved) {
       const parsed = JSON.parse(saved);
       setArticles(parsed);
-      if (parsed.length > 0) {
-        setSelectedArticle(parsed[0]);
-      }
+      // Don't auto-select first article - let user choose from "Semua" tab
     } else {
       // Seed initial data
       localStorage.setItem('wh_articles', JSON.stringify(SEED_ARTICLES));
       setArticles(SEED_ARTICLES);
-      setSelectedArticle(SEED_ARTICLES[0]);
+      // Don't auto-select first article - let user choose from "Semua" tab
     }
 
     // Load admin login status from sessionStorage
