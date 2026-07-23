@@ -18,12 +18,12 @@ type Category = 'SOP' | 'Panduan' | 'Instruksi Kerja' | 'Safety' | 'Form & Templ
 
 const CATEGORIES: Category[] = ['SOP', 'Panduan', 'Instruksi Kerja', 'Safety', 'Form & Template'];
 
-const CATEGORY_COLORS: Record<Category, { bg: string; text: string; border: string; icon: string }> = {
-  SOP: { bg: 'bg-[#f1e9d8]', text: 'text-[#8a6a2c]', border: 'border-[#e4ddd0]', icon: '📄' },
-  Panduan: { bg: 'bg-[#eceee7]', text: 'text-[#5c6650]', border: 'border-[#e4ddd0]', icon: '📘' },
-  'Instruksi Kerja': { bg: 'bg-[#efeae1]', text: 'text-[#6b5f4f]', border: 'border-[#e4ddd0]', icon: '📝' },
-  Safety: { bg: 'bg-[#f2e6e0]', text: 'text-[#96543e]', border: 'border-[#e4ddd0]', icon: '⚠️' },
-  'Form & Template': { bg: 'bg-[#f1e9d8]', text: 'text-[#8a6a2c]', border: 'border-[#e4ddd0]', icon: '📑' },
+const CATEGORY_COLORS: Record<Category, { bg: string; text: string; border: string; icon: React.ReactNode }> = {
+  SOP: { bg: 'bg-[#f1e9d8]', text: 'text-[#8a6a2c]', border: 'border-[#e4ddd0]', icon: <FileText className="h-4 w-4" /> },
+  Panduan: { bg: 'bg-[#eceee7]', text: 'text-[#5c6650]', border: 'border-[#e4ddd0]', icon: <BookOpen className="h-4 w-4" /> },
+  'Instruksi Kerja': { bg: 'bg-[#efeae1]', text: 'text-[#6b5f4f]', border: 'border-[#e4ddd0]', icon: <Edit2 className="h-4 w-4" /> },
+  Safety: { bg: 'bg-[#f2e6e0]', text: 'text-[#96543e]', border: 'border-[#e4ddd0]', icon: <Shield className="h-4 w-4" /> },
+  'Form & Template': { bg: 'bg-[#f1e9d8]', text: 'text-[#8a6a2c]', border: 'border-[#e4ddd0]', icon: <ClipboardPaste className="h-4 w-4" /> },
 };
 
 // Seed Articles
@@ -106,7 +106,7 @@ const SEED_ARTICLES: Article[] = [
       </ul>
 
       <blockquote>
-        ⚠️ <strong>PERINGATAN KERAS:</strong> Melanggar peraturan penggunaan APD di area aktif forklift akan dikenakan sanksi Surat Peringatan Pertama (SP-1).
+        <strong>PERINGATAN KERAS:</strong> Melanggar peraturan penggunaan APD di area aktif forklift akan dikenakan sanksi Surat Peringatan Pertama (SP-1).
       </blockquote>
 
       <h2>2. Batas Kecepatan Kendaraan &amp; Pejalan Kaki</h2>
@@ -1101,7 +1101,7 @@ export default function App() {
         ${!isVideo ? `<button type="button" data-action="rotate" title="Putar Gambar 90°">↻</button>` : ''}
         <button type="button" data-action="caption" title="Beri Keterangan Gambar">💬</button>
         <div class="sep"></div>
-        <button type="button" class="danger" data-action="delete" title="Hapus Media">🗑</button>
+        <button type="button" class="danger" data-action="delete" title="Hapus Media">🗑️</button>
       </div>
       ${innerContent}
       <span class="resize-handle"></span>
@@ -1912,7 +1912,7 @@ export default function App() {
           }`}
         >
           <span className="mr-2">
-            {toast.type === 'success' ? '✨' : toast.type === 'error' ? '❌' : toast.type === 'warning' ? '⚠️' : 'ℹ️'}
+            {toast.type === 'success' ? <Check className="h-4 w-4 text-emerald-600" /> : toast.type === 'error' ? <Shield className="h-4 w-4 text-rose-600" /> : toast.type === 'warning' ? <Shield className="h-4 w-4 text-amber-600" /> : <InfoIcon className="h-4 w-4 text-indigo-600" />}
           </span>
           {toast.msg}
         </div>
