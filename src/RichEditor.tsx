@@ -31,18 +31,28 @@ export default function RichEditor({ initialHtml = '', onChange }: RichEditorPro
   const editorRef = useRef<HTMLDivElement>(null);
   const uploadRef = useRef<HTMLInputElement>(null);
   const savedRange = useRef<Range | null>(null);
+  const initialized = useRef(false);
   const [selected, setSelected] = useState<MediaSelection | null>(null);
   const [youtubeOpen, setYoutubeOpen] = useState(false);
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [youtubeError, setYoutubeError] = useState('');
 
   useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== initialHtml) {
+    if (editorRef.current && !initialized.current) {
       editorRef.current.innerHTML = initialHtml;
+      initialized.current = true;
     }
   }, [initialHtml]);
 
-  const emit = () => onChange(editorRef.current?.innerHTML ?? '');
+  const emit = () => {
+    if (!editorRef.current) return;
+    const clean = editorRef.current.cloneNode(true) as HTMLElement;
+    clean.querySelectorAll('.editor-media').forEach((item) => {
+      item.classList.remove('selected');
+      item.removeAttribute('data-drag-id');
+    });
+    onChange(clean.innerHTML);
+  };
 
   const rememberSelection = () => {
     const selection = window.getSelection();
@@ -116,6 +126,10 @@ export default function RichEditor({ initialHtml = '', onChange }: RichEditorPro
 
   const handleEditorClick = (event: MouseEvent<HTMLDivElement>) => {
     const media = (event.target as HTMLElement).closest('.editor-media') as HTMLElement | null;
+    if (media) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
     selectMedia(media);
   };
 
@@ -146,6 +160,10 @@ export default function RichEditor({ initialHtml = '', onChange }: RichEditorPro
     const media = (event.target as HTMLElement).closest('.editor-media') as HTMLElement | null;
     if (!handle || !media || !editorRef.current) return;
     event.preventDefault();
+    event.stopPropagation();
+    selectMedia(media);
+    media.setAttribute('draggable', 'false');
+    document.body.classList.add('is-resizing-media');
     const startX = event.clientX;
     const startWidth = media.getBoundingClientRect().width;
     const parentWidth = editorRef.current.clientWidth;
@@ -157,6 +175,8 @@ export default function RichEditor({ initialHtml = '', onChange }: RichEditorPro
     const stop = () => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', stop);
+      media.setAttribute('draggable', 'true');
+      document.body.classList.remove('is-resizing-media');
       emit();
     };
     window.addEventListener('pointermove', move);
@@ -164,6 +184,10 @@ export default function RichEditor({ initialHtml = '', onChange }: RichEditorPro
   };
 
   const onDragStart = (event: DragEvent<HTMLDivElement>) => {
+    if ((event.target as HTMLElement).closest('.media-resize')) {
+      event.preventDefault();
+      return;
+    }
     const media = (event.target as HTMLElement).closest('.editor-media') as HTMLElement | null;
     if (!media) return;
     event.dataTransfer.setData('text/editor-media-id', media.dataset.dragId || '');
